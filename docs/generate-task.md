@@ -1,522 +1,441 @@
-# Implementation Task Generation Guidelines
+# Rules: Generate an Implementation Task Document (`tasks.md`)
 
-Last updated: June 23, 2026
+Last updated: 2026-06-29
 
-> **Objective:** Convert `docs/PRD.md` into a scoped, traceable, and verifiable implementation plan at `docs/tasks.md` without inventing requirements or starting implementation.
+> One-sentence objective: Convert confirmed requirements with stable IDs in `docs/PRD.md` into a traceable, verifiable `docs/tasks.md` executed in verification stages. Every parent task package must pass AI self-checks and receive user approval before the next stage begins.
 
-## 1. Core Concepts
+## I. Responsibilities and Boundaries
 
-### Task document
+`docs/tasks.md` explains how to complete the work in stages, including scope freeze, requirement traceability, reuse boundaries, dependencies, affected files, task packages, verification, and execution prompts.
 
-`docs/tasks.md` is the execution contract between the PRD and implementation. It defines scope boundaries, requirement traceability, component reuse, file ownership, task sequencing, verification, and handoff prompts.
+When generating or updating tasks:
 
-It is not a second PRD. It may clarify how confirmed requirements will be implemented, but it must not introduce product behavior, business rules, routes, providers, copy, or infrastructure that the PRD does not authorize.
+- Write only `docs/tasks.md`; do not modify application code, configuration, the PRD, or other documentation.
+- Read-only repository inspection using `rg`, `ls`, `sed`, and file reads is allowed.
+- Do not install dependencies, start services, build, run database migrations, call providers, or deploy.
+- Requirements and business rules come from `docs/PRD.md`. Repository inspection determines how to implement them, not what to implement.
+- Design materials guide layout and visual direction only; they must not introduce functionality, states, entry points, or copy unconfirmed by the PRD.
+- Do not modify user-customized UI copy, labels, or placeholders unless explicitly required by the PRD.
+- Do not expose or demonstrate real API keys, secrets, tokens, OAuth secrets, webhook secrets, or database URLs.
 
-### PRD reference IDs
+If the user asks to “plan the tasks” or “generate tasks,” the current turn generates or updates only the task document and does not execute its tasks.
 
-Every formal parent task must reference at least one PRD requirement ID, such as `FR-001`, `UX-002`, `API-001`, `DATA-001`, `PAY-001`, `SEC-001`, `SEO-001`, or `AN-001`.
+## II. Standard Classification Rules
 
-If the PRD contains testable requirements without IDs, mark the task plan `Needs review` and request a PRD update. Do not create substitute IDs in `tasks.md`. A `BLOCKED-###` identifier tracks an implementation blocker; it never replaces a PRD ID.
+### 2.1 Scope and Task Destination
 
-### Scope terms
+| PRD category or status | Destination in tasks.md | Executable |
+|---|---|---|
+| Unblocked `Current Scope` | Formal parent task package | Yes |
+| `Existing Baseline` requiring reuse, hiding, preservation, redirect, noindex, or closeout | Formal parent task package or task boundary | Yes, but not as new functionality |
+| `Confirmed Next Phase` | `Follow-up / Later` | No, unless a new PRD promotes it to Current Scope |
+| `Possible Later` | `Follow-up / Later` | No |
+| `Non-Goals` | `Out of Scope` | No |
+| `Blocking: Yes` or `⛔ Blocked` | `Blocked Task` | No |
+| `Blocking: No` | Note or `Follow-up / Later` | Does not block other tasks |
+| New requirement without a PRD ID | `Follow-up / Later` or require a PRD update first | No |
 
-Use the same terminology as the PRD:
+This table is the sole complete definition of scope treatment. Later sections apply it directly without repeating or expanding it.
 
-| Term | Task-plan treatment |
-| --- | --- |
-| `Current Scope` | Generate formal implementation tasks. |
-| `Existing Baseline` | Generate only the work required to reuse, preserve, hide, remove from navigation, or leave untouched. |
-| `Confirmed Next Phase` | Record under `Follow-up / Later`; do not generate executable tasks. It may justify limited infrastructure preparation only when the PRD explicitly requires it. |
-| `Possible Later` | Record under `Follow-up / Later`; it must not affect current tasks or infrastructure. |
-| `Non-Goals` | Record under `Out of Scope`; generate no implementation tasks. |
+### 2.2 Task Types
 
-### Task categories
+- **Formal Task Package:** A parent task that can be fully implemented, verified by AI, and submitted for user acceptance.
+- **Confirmation Task:** Produces only an approach, affected-file list, configuration list, or unblock condition; it does not modify real business implementation.
+- **Blocked Task:** Records the source, affected PRD IDs, permitted preliminary work, and unblock condition; it contains no real integration steps.
+- **Follow-up / Later:** Work not executed now; it has no checkbox or execution prompt.
 
-| Category | Purpose |
-| --- | --- |
-| **Formal parent task** | An executable, independently verifiable unit of Current Scope work. |
-| **Subtask** | A numbered detail within a parent task. It is not independently assigned, checked off, or committed. |
-| **Blocked Task** | A non-executable record of missing information, access, tooling, or a product decision. |
-| **Confirmation Task** | A decision request that can be resolved without implementation. Use sparingly and keep it outside the formal task sequence. |
-| **Follow-up / Later** | Non-executable future work or out-of-scope findings. |
-| **Final Verification** | Repository-level checks required before the implementation is considered complete. |
+Every formal or confirmation parent task package must reference at least one PRD ID. A Blocked ID cannot replace a PRD ID.
 
-### Verification
+### 2.3 Parent Task Status
 
-Verification must be evidence-based. Use commands and test methods that actually exist in the repository. Distinguish:
+Parent task packages are the unit of execution and verification. Their fixed lifecycle is:
 
-- **AI self-checks:** deterministic checks the coding agent can run and report, such as linting, type checking, targeted tests, route checks, or state assertions.
-- **Manual tests:** experiential checks that require a person, such as visual quality, mobile feel, usability, readability, and end-to-end product judgment.
-
-## 2. Inputs and Preflight Checks
-
-### 2.1 PRD readiness
-
-Read `docs/PRD.md` in full. It is usable only when it provides enough information to identify:
-
-- Current Scope and Non-Goals;
-- the Existing Baseline and treatment of template functionality;
-- testable requirements and stable PRD IDs;
-- core user journeys and acceptance criteria;
-- applicable responsive and UI states;
-- triggered API, data, authentication, storage, payment, analytics, security, privacy, and SEO requirements; and
-- unresolved questions with blocking status.
-
-Do not generate formal tasks for a capability when a blocking question controls its scope, provider, business behavior, data boundary, payment model, authentication model, information architecture, or user promise. Create a Blocked Task with an explicit unblock condition instead.
-
-Non-blocking questions may remain in the plan, but the affected task must state the assumption and avoid irreversible decisions.
-
-Ask clarification questions only when the answer cannot be recovered from the PRD or repository and a safe assumption is not available. Do not ask the user to make routine low-level engineering decisions.
-
-### 2.2 Repository preflight
-
-Inspect the repository before naming files, components, dependencies, or commands. At minimum, check:
-
-- `AGENTS.md` and any nested instruction files;
-- `package.json` and lockfiles;
-- application routes and entry points;
-- shared UI and feature components;
-- design tokens and styling conventions;
-- i18n configuration and locale resources;
-- API routes, server actions, services, and provider adapters;
-- schema, migrations, storage, and authentication code;
-- test configuration and existing test patterns;
-- deployment, environment, and platform configuration;
-- `docs/design/`, SEO references, and other files cited by the PRD; and
-- existing `docs/tasks.md`, if present.
-
-Use fast, read-only discovery first (`rg --files`, `rg`, and focused file reads). Do not run builds, migrations, generators, installers, deployment commands, or other state-changing operations while generating the task document.
-
-Only list a file path, script, component, environment variable, provider, or command when repository evidence supports it. Otherwise use `TBD` and state how it will be resolved.
-
-Follow repository-specific placement rules. Prefer existing components and established module boundaries. If a new component is required and the repository mandates a component-creation workflow or skill, record that dependency explicitly.
-
-### 2.3 Missing context
-
-Missing design, SEO, repository, or provider context does not automatically block the entire plan. Mark the affected item as one of:
-
-- `TBD — non-blocking`: implementation can proceed within a reversible boundary;
-- `Needs review`: the source document should be corrected before execution; or
-- `⛔ Blocked`: implementation cannot proceed safely.
-
-Never invent missing context to make the plan appear complete.
-
-### 2.4 Existing task document
-
-When `docs/tasks.md` already exists, update it in place:
-
-- preserve completed parent-task numbers and status;
-- do not renumber existing tasks;
-- append new parent tasks to the relevant phase or section;
-- update traceability and scope summaries when the PRD changes;
-- retain useful verification evidence; and
-- move newly excluded work to `Follow-up / Later` instead of deleting history without explanation.
-
-If the existing plan conflicts materially with the current PRD, mark the conflict and rebuild the affected section from the PRD. The latest confirmed PRD is authoritative.
-
-## 3. Workflow
-
-### Step 1: Read and classify the PRD
-
-Build an internal inventory of:
-
-- every Current Scope requirement ID;
-- Existing Baseline items that need handling;
-- Confirmed Next Phase and Possible Later items;
-- Non-Goals;
-- applicable UI states and responsive requirements;
-- external providers and environment configuration;
-- acceptance criteria; and
-- blocking and non-blocking open questions.
-
-Detect high-risk capabilities explicitly. Repository code or starter-template features do not trigger work unless the PRD does.
-
-### Step 2: Resolve blocking boundaries
-
-For each open question, determine whether work can proceed without fabricating a requirement or creating rework with material cost. If not, create a Blocked Task containing:
-
-- the blocker;
-- affected PRD IDs and tasks;
-- why it blocks implementation;
-- the required decision, input, access, or tool;
-- the owner; and
-- a precise unblock condition.
-
-Do not include implementation steps inside a Blocked Task.
-
-### Step 3: Scan the repository
-
-Map PRD requirements to real routes, modules, components, locale files, tests, configuration, and scripts. Record whether each relevant component should be reused, modified within a defined boundary, newly created, hidden, or left untouched.
-
-### Step 4: Freeze scope
-
-Write `Scope Freeze` before decomposing tasks. It must clearly distinguish:
-
-- `In Scope`;
-- `Existing Baseline` treatment;
-- `Out of Scope`; and
-- `Follow-up / Later`, split into `Confirmed Next Phase` and `Possible Later`.
-
-If scope cannot be frozen because the PRD is contradictory or incomplete, stop formal decomposition and create the appropriate review or blocker record.
-
-### Step 5: Build the component reuse summary
-
-For every UI area in scope, identify the existing component and source path when available, its planned treatment, the allowed modification boundary, and the related PRD IDs. New components require a concrete reason why reuse or bounded modification is insufficient.
-
-Design references may guide visual hierarchy and layout, but they cannot create requirements, copy, routes, states, or interactions absent from the PRD.
-
-### Step 6: Plan risk, configuration, sequencing, and ownership
-
-For each triggered high-risk capability, record:
-
-- the PRD source;
-- provider or source of truth;
-- server/client boundary;
-- environment variables and who supplies them;
-- security and privacy constraints;
-- prerequisite tasks;
-- failure and recovery behavior; and
-- required verification.
-
-Create a two-agent parallel plan only when work can be divided by clear file ownership and integration boundaries. Shared files, routing assembly, schemas, global configuration, and final QA belong in an explicit integration pass. If safe ownership boundaries do not exist, use a single-threaded plan.
-
-### Step 7: Decompose work and map tests
-
-Split work by independently verifiable outcomes, not by arbitrary file count. A parent task should usually deliver one coherent capability or integration boundary.
-
-Each parent task must include:
-
-- PRD references;
-- objective and deliverable;
-- dependencies;
-- scope boundary and explicit exclusions;
-- numbered subtasks;
-- affected files;
-- completion criteria; and
-- verification method and expected evidence.
-
-Avoid tasks so broad that they cannot be reviewed safely or so small that they create coordination overhead. Keep tightly coupled UI states, copy, responsive behavior, and tests with the capability they validate.
-
-Create at least one happy-path test for every core journey and one failure-path test for every triggered high-risk capability. Cover applicable UI states and relevant 320 px, 768 px, and 1024 px breakpoints. Do not create tests for out-of-scope capabilities.
-
-### Step 8: Assemble `docs/tasks.md`
-
-Use the structure in Section 5. Generate only the document; do not execute tasks or commands embedded in it.
-
-### Step 9: Review and save
-
-Fix local editorial issues in place: terminology, numbering, missing references, formatting, duplicate coverage, and incomplete verification details.
-
-Return to the relevant earlier step when the issue changes scope, contradicts the PRD, invents product behavior, misclassifies future work, or invalidates file ownership or task sequencing.
-
-Run the `Tasks Self-Check` and save only after all applicable checks pass.
-
-## 4. Task Authoring Rules
-
-### Scope boundaries
-
-A task may implement only Current Scope or explicitly required Existing Baseline cleanup. `Confirmed Next Phase`, `Possible Later`, `Non-Goals`, and newly discovered ideas must not appear as executable subtasks.
-
-Every parent task must include a `Boundary / Exclusions` field. State what is deliberately not included, especially adjacent template capabilities such as authentication, Dashboard, Billing, Pricing, payments, storage, analytics, or admin features.
-
-### i18n
-
-User-facing final copy must use the repository's i18n system. Tasks must reference approved PRD copy and existing key conventions. Do not rewrite user-approved copy, hard-code strings in business components, or invent locale file paths.
-
-### Design implementation
-
-Use this authority order:
-
-1. PRD for product scope, behavior, copy, and acceptance criteria;
-2. repository instructions and architecture for implementation constraints;
-3. existing design tokens and components for UI construction; and
-4. design references for visual direction.
-
-When sources conflict, do not silently choose. Mark the conflict as `Needs review` or blocked according to impact.
-
-### Follow-up work
-
-Record future work as plain, non-checkbox text:
-
-```markdown
-## Follow-up / Later
-
-### Confirmed Next Phase
-
-- Item — source and reason it is deferred.
-
-### Possible Later
-
-- Item — source and decision still required.
-
-### Out-of-scope findings
-
-- Item — discovered during planning; PRD update required before promotion.
+```text
+Pending → In progress → Ready for review → Approved
 ```
 
-Follow-up items do not receive formal task numbers, implementation steps, file lists, or execution prompts.
+- `Pending`: Not started; title uses `[ ]`.
+- `In progress`: All child items within the parent are being completed.
+- `Ready for review`: AI verification has passed; stop and wait for user confirmation.
+- `Approved`: The user has confirmed the task; only then change the title to `[x]`.
 
-## 5. Required `tasks.md` Structure
+Child items describe required coverage inside the parent package. They have no checkbox and are not independently executed, committed, or given prompts.
 
-Use GitHub-flavored Markdown and save the document at `docs/tasks.md`.
+## III. Five-Step Generation Workflow
 
-```markdown
-# Tasks
+### Step 1: Read the PRD and Check Usability and Blockers
 
-> Source of truth: `docs/PRD.md`
-> Status: Draft | Ready | Needs review | Blocked
-```
+Read `docs/PRD.md` and extract:
 
-Use the following section order.
+- `Current Scope`, `Existing Baseline`, `Confirmed Next Phase`, `Possible Later`, and `Non-Goals`;
+- page, flow, functionality, copy, error, and non-functional requirement IDs;
+- API, Data, Auth, Storage, Payment, Analytics, and external providers;
+- design and technical constraints; and
+- Open Questions, `Blocking`, and `⛔ Blocked` states.
 
-### 5.1 Scope Freeze
+Minimum usability requirements:
 
-```markdown
-## 1. Scope Freeze
+- Current Scope is not empty.
+- Core flows and page scope can be determined.
+- Every Current Scope item requiring implementation or verification has a stable PRD ID.
+- Critical payment, authentication, data, and core-provider boundaries are not presented as confirmed when they remain unknown.
+
+Treatment rules:
+
+- If overall scope cannot be determined, do not generate a complete formal task plan; require the PRD to be corrected first.
+- A local blocker blocks only related tasks; other unblocked Current Scope work may still generate tasks.
+- If only a file path or component source is unknown, use `TBD`; do not block the requirement itself.
+- If a gap changes product scope or business rules, do not decide it in tasks. Generate a Blocked/Confirmation Task or require a PRD update.
+- When a question is necessary, follow the repository `AGENTS.md` format for numbering, options, Recommended, and Reason.
+
+### Step 2: Scan Repository Context
+
+Inspect only content relevant to the current PRD:
+
+- `AGENTS.md`, `package.json` scripts, and repository execution rules;
+- pages, routes, layouts, navigation, and footer;
+- relevant components, shared UI, styles, and design tokens;
+- i18n files, namespaces, and existing keys;
+- site configuration, content system, metadata, sitemap, robots, and redirects when affected;
+- API, database, auth, storage, payment, analytics, mail, and related directories only when triggered by the PRD;
+- `env.example`, deployment configuration, and external-service usage points;
+- design files, screenshots, or reference code specified by the PRD; and
+- `docs/ui-patterns.md` when user feedback, states, or interaction patterns are involved.
+
+Prioritize actual equivalent paths in the current repository, for example:
+
+- `src/app/[locale]/*`, `src/app/api/*`;
+- `src/components/*`, `src/styles/*`;
+- `src/lib/*`, `src/ai/*`, `src/db/*`;
+- `src/payment/*`, `src/analytics/*`, `src/mail/*`;
+- `messages/*.json`, `content/*`, `src/config/*`;
+- `src/app/sitemap.ts`, `src/app/robots.ts`, and metadata helpers; and
+- Cloudflare, OpenNext, Wrangler, and deployment scripts that actually exist.
+
+Rules:
+
+- When a path is absent, find its actual equivalent; do not invent one.
+- When it cannot be confirmed, write `TBD — verify actual file path in repo before implementation.`
+- For reusable content, record source, target, allowed changes, and prohibited changes.
+- Template capabilities do not enter Current Scope merely because they exist.
+- Before adding a component, confirm that no existing component can be reused or modified within explicit boundaries.
+- Verification commands may come only from `AGENTS.md`, `package.json`, or actual repository tooling.
+
+### Step 3: Freeze Scope and Determine Dependencies
+
+Generate:
+
+- `In Scope`: Pages, functionality, copy, configuration, and verification included now, each referencing a PRD ID.
+- `Existing Baseline`: Capabilities only reused, preserved, hidden, left untouched, or closed out.
+- `Out of Scope`: Non-Goals and other explicitly excluded current content.
+- `Follow-up / Later`: Confirmed Next Phase, Possible Later, and out-of-scope findings discovered during execution.
+
+Also determine:
+
+- whether API, database, auth, storage, payment, upload, analytics, and SEO/Legal are triggered;
+- whether providers and environment variables are known, and whether missing configuration blocks all implementation, only real integration, or does not affect local UI/mock work;
+- dependency order and shared high-conflict files; and
+- whether new-site initialization, schema/migration, external-service configuration, or deployment prerequisites are required.
+
+Generate new-site initialization only when explicitly required by the PRD and based on scripts and parameters that actually exist. Do not generate it merely because the template contains Cloudflare, Hyperdrive, or database configuration.
+
+### Step 4: Decompose Parent Task Packages by Verification Stage
+
+Use four to eight parent task packages in typical cases, but follow natural verification stages rather than forcing a count. Common stages include:
+
+- foundational structure or shared contracts;
+- core UI and page states;
+- API, data, or provider integration;
+- high-risk Auth, Payment, or Storage work; and
+- integration, SEO/Legal, and pre-release closeout.
+
+Rules:
+
+- A parent task package must complete its child items continuously and produce one clear user acceptance point.
+- UI and real API work may be separate stages so UI can be accepted first, but do not claim real integration is complete.
+- Separate a Confirmation Task from implementation that depends on its result.
+- Do not hide blocked work inside a formal parent's child items.
+- Every parent states objective, boundaries, dependencies, files, AI verification, and user-acceptance test IDs.
+- Do not begin the next parent task until the user approves the current one.
+- If user acceptance fails, continue fixing the current parent; do not create a new stage to evade the issue.
+
+Generate a parallel plan only when the user explicitly requests multiple AI agents. Default execution is single-threaded.
+
+### Step 5: Assemble, Self-Check, and Save
+
+- Generate or incrementally update `docs/tasks.md` using Chapter IV.
+- Run Chapter VI Self-Check, correct all failures, and save as UTF-8 Markdown without a BOM.
+- Do not execute generated tasks or commit instructions in the current turn.
+
+## IV. `docs/tasks.md` Output Structure
+
+The following statement must appear below the title:
+
+> Document role: This file is the current project's staged execution checklist. Requirements and business rules come from `docs/PRD.md`; visual and implementation work follows the current project's design tokens, component system, i18n, and `AGENTS.md`. If a task conflicts with the PRD, update the PRD first, then adjust the task plan.
+
+Generate the following sections in order. Omit untriggered conditional sections instead of mechanically writing `Not applicable`. `Execution Prompts` must be the final second-level section.
+
+### 4.1 Scope Freeze
+
+Always include these four subsections:
+
+```md
+## Scope Freeze
 
 ### In Scope
-- Requirement or capability (`FR-001`, `UX-001`)
+- `FR-001` — ...
 
 ### Existing Baseline
-- Existing capability — reuse / preserve / hide / leave untouched
+- `PAGE-002` — preserve / reuse / hide / leave untouched
 
 ### Out of Scope
-- Explicit exclusion and PRD source
+- ...
 
 ### Follow-up / Later
 #### Confirmed Next Phase
-- Non-executable item
-
+- ...
 #### Possible Later
-- Non-executable item
+- ...
+#### Out-of-scope Items Discovered During Execution
+- ...
 ```
 
-Do not use vague statements such as “everything in the PRD.” Make the boundary auditable.
+Empty Follow-up categories may be omitted, but they must not become formal tasks or implementation steps.
 
-### 5.2 PRD Traceability Matrix
+### 4.2 Traceability & Reuse
 
-| PRD ID | Requirement summary | Scope class | Parent task | Verification | Status |
-| --- | --- | --- | --- | --- | --- |
-| `FR-001` | Example requirement | Current Scope | `1.0` | Targeted test and manual test 1 | Planned |
+Keep two independent tables; do not combine the relationships.
 
-Include every Current Scope ID and every Existing Baseline ID that requires action. A requirement may map to multiple tasks, but ownership must be clear. Future and excluded items may appear for visibility but must have no formal task assignment.
+Requirement traceability:
 
-### 5.3 Component Reuse Summary
-
-| UI area | Existing component / path | Treatment | Modification boundary | PRD IDs |
-| --- | --- | --- | --- | --- |
-| Example form | `TBD` | Reuse / modify / create / hide / untouched | Exact allowed change | `FR-001`, `UX-001` |
-
-If the work has no UI or component impact, write `Not applicable` and explain why.
-
-### 5.4 High-Risk Capability Precheck
-
-| Capability | Triggered | PRD IDs | Source of truth / provider | Key constraints | Task or blocker |
-| --- | --- | --- | --- | --- | --- |
-| API | Yes / No | `API-001` | Provider or `TBD` | Server-only secret, timeout, errors | `2.0` / `BLOCKED-001` |
-
-Cover API/AI, authentication, database, storage/uploads, payments/credits, analytics, security/privacy, and SEO infrastructure. For untriggered capabilities, use `No — not in Current Scope`; do not create speculative setup tasks.
-
-### 5.5 Relevant Files
-
-Group evidence-backed paths under:
-
-- `Core changes` — files that are expected to change;
-- `Potential changes` — files that may change after a stated decision; and
-- `New files` — files that are justified by a requirement and repository conventions.
-
-For each path, state its role and related task. Use `TBD` rather than inventing a path.
-
-### 5.6 External Providers & Configuration Handoff
-
-| Provider / configuration | Purpose | Required values | Owner | Storage / exposure boundary | Blocking |
-| --- | --- | --- | --- | --- | --- |
-
-Include only providers and configuration triggered by the PRD. Use variable names found in the repository or explicitly specified by the PRD. Never include real credentials or credential-like examples.
-
-### 5.7 Technical Constraints & Dependencies
-
-List repository rules, runtime constraints, ordering dependencies, migrations, shared-module boundaries, and integration risks. Separate confirmed constraints from assumptions and TBDs.
-
-### 5.8 Open Questions & Blocked Tasks
-
-Preserve PRD blocking status. Use this format for blockers:
-
-```markdown
-### ⛔ BLOCKED-001: Confirm the checkout provider and webhook contract
-
-- **Affected PRD IDs:** `PAY-001`, `SEC-002`
-- **Blocks:** Parent task `3.0`
-- **Reason:** The payment flow and source of truth cannot be implemented safely without this decision.
-- **Required input:** Confirmed provider, product model, and webhook ownership.
-- **Owner:** Product owner
-- **Unblock condition:** PRD updated with the confirmed decision.
+```md
+| PRD ID | Requirement Summary | Task Package | Coverage | Status |
+|---|---|---|---|---|
+| FR-001 | ... | 1.0 | ... | Planned |
 ```
 
-Do not disguise a blocker as an ordinary implementation task.
+Rules:
 
-### 5.9 Phase Gates
+- Cover all Current Scope IDs and Existing Baseline IDs requiring closeout.
+- One ID may be covered by multiple tasks; one task may reference multiple IDs.
+- When no code change is required, state `Covered by existing implementation`, `Verification only`, or `Documentation only`.
 
-Define gates only where later work depends on verified outcomes. Each gate must state prerequisites, checks, expected evidence, and which tasks it unlocks. Avoid ceremonial gates that add no risk control.
+Generate the component-reuse table only when pages or components are involved:
 
-### 5.10 Two-Agent Parallel Plan
-
-Include this section only when parallel execution is safe. Provide:
-
-- a short schedule by round;
-- an ownership table with writable and prohibited files for each agent;
-- shared-file integration ownership;
-- prerequisite and handoff points; and
-- a final integration and QA task.
-
-No file may have simultaneous owners. If file boundaries overlap materially, omit the parallel plan and use single-threaded execution.
-
-### 5.11 Formal Parent Tasks
-
-Use this exact heading pattern:
-
-```markdown
-### [ ] 1.0 Implement a specific, outcome-oriented capability
-
-- **PRD references:** `FR-001`, `UX-001`
-- **Objective:** Concrete outcome delivered by this task.
-- **Dependencies:** None / task IDs / blocker IDs.
-- **Boundary / Exclusions:** What this task may and may not change.
-- **Subtasks:**
-  - **1.1** First implementation step.
-  - **1.2** Required state, responsive, copy, or integration work.
-- **Affected files:** Evidence-backed paths or `TBD` with a resolution method.
-- **Completion criteria:**
-  - The observable, testable outcome.
-  - The relevant failure and responsive behavior.
-- **Verification:** Command or method, expected result, and required evidence.
-- **Self-check:** Confirm PRD IDs, scope boundary, component reuse, files, and verification are consistent.
+```md
+| Section / Component | Decision | Existing Source | Target | Allowed Changes | Must Not Change |
+|---|---|---|---|---|---|
+| ... | Reuse / Adapt / New / Hide / Do not touch | ... | ... | ... | ... |
 ```
 
-Parent tasks use sequential `1.0`, `2.0`, `3.0` numbering. Completed titles use `[x]`. Subtasks use `1.1`, `1.2`, and so on, but do not use checkboxes, receive separate commits, or receive separate execution prompts.
+A new component must explain why existing components cannot be reused and define its single responsibility and boundaries. When execution requires creating or cloning a component, use the configured `create-component` Skill. If that Skill is explicitly required but unavailable, report a blocker; do not bypass the rule and create the component arbitrarily.
 
-Start titles with a specific verb. Do not use vague completion criteria such as “works correctly,” “looks good,” or “improve error handling.” Prefer observable criteria, for example:
+### 4.3 Dependencies & Blockers (Conditional)
 
-- Uploading a non-`.docx` file displays the copy mapped to `Tool.errors.unsupportedFile`.
-- The page has no page-level horizontal overflow at 320 px.
-- No payment, authentication, history, or cloud-storage logic is introduced.
+Generate when API, Data, Auth, Storage, Payment, Upload, Analytics, SEO/Legal, an external provider, or a blocker is triggered.
 
-Blocked Tasks use `BLOCKED-001` numbering. Follow-up items do not consume formal task numbers. During incremental updates, append numbers; never insert or reorder existing parent-task IDs.
-
-### 5.12 Manual Test Plan
-
-Keep manual and AI-executable checks separate. Manual tests appear first. Use one continuous sequence across both tables.
-
-```markdown
-## 12. Manual Test Plan
-
-### Manual Tests
-
-| # | Scenario | Page / entry point | Steps | Test data | Expected result | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | Primary journey | `/` | Complete the primary flow | Valid input | Result is readable and the next action is available | Not tested |
-
-### AI Self-Checks
-
-| # | Scenario | Page / entry point | Steps | Test data | Expected result | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| 2 | Empty input | `/` | Submit without input | Empty | Validation appears and no invalid request is sent | Not tested |
+```md
+| Capability | PRD IDs | Decision | Provider / Dependency | Required Config | Impact if Missing |
+|---|---|---|---|---|---|
+| Payment | PAY-001 | Configure / Reuse / Defer | ... | `VARIABLE_NAME` | ... |
 ```
 
-Omit only the empty subsection. If neither type applies, write `Not applicable — this plan requires no manual tests or AI self-checks.`
+Blocked Task format:
 
-Every core journey needs a happy-path case. Every triggered high-risk capability needs a failure case. UI work must cover all applicable states and relevant breakpoints. Result-oriented tools must test at least one confirmed result action.
-
-Execution prompts may reference only Manual Test numbers in the red manual-test reminder. AI self-checks are performed and reported by the implementer.
-
-### 5.13 Final Verification
-
-Use checkboxes and record the method, expected result, and evidence:
-
-```markdown
-- [ ] Verification item
-  - Method: `repository-supported command or review procedure`
-  - Expected result: Observable pass condition
-  - Evidence: To be completed during implementation
+```md
+### BLOCKED-001: Title
+- Affected PRD IDs: ...
+- Blocker source: ...
+- Reason: ...
+- Unblock condition: ...
+- Allowed before unblocking: ...
+- Prohibited: ...
 ```
 
-Cover only enabled pages and in-scope capabilities. Use repository scripts rather than invented commands. Depending on scope, verify:
+Rules:
 
-- enabled routes and complete end-to-end journeys;
-- navigation, footer, metadata, canonical URLs, sitemap, and robots behavior;
-- approved i18n copy;
-- responsive behavior at 320 px, 768 px, and 1024 px with no page-level horizontal overflow;
-- legal, analytics, authentication, payment, storage, API, and privacy behavior when triggered; and
-- result actions and error recovery.
+- List only environment-variable names and purposes, never real values.
+- An unconfirmed provider must not generate steps for real integration, webhooks, entitlement crediting, schemas, or production configuration.
+- When mock/UI work can proceed, explicitly state `mock only` and prerequisites for real integration.
+- `Blocking: No` must not block unrelated tasks.
 
-Review Legal and About content only when changes affect user data, uploads, AI/API use, payments, authentication, privacy promises, or brand positioning. Generate Blog or content-growth work only when the PRD places it in Current Scope.
+### 4.4 Relevant Files
 
-### 5.14 Development Rules & Task List Management
+```md
+## Relevant Files
 
-Include these standing rules:
+### Core Changes
+- `path` — operation and scope
 
-- Implement strictly against `docs/PRD.md` and `Scope Freeze`.
-- Reuse components according to `Component Reuse Summary`.
-- Load final user-facing copy through i18n.
-- Never expose secrets in code, Markdown, logs, screenshots, or a public repository.
-- Use only verification commands supported by repository instructions and scripts.
-- Mark a parent task `[x]` only after its completion criteria and verification pass.
-- Add newly discovered required work to `docs/tasks.md` before implementation.
-- Put out-of-scope findings in `Follow-up / Later` until the user confirms a PRD update.
-- Record blockers as Blocked Tasks, not ordinary subtasks.
+### Potential Changes
+- `path` — trigger condition
 
-Treat any change to routes, navigation, indexed content, shared modules, schemas, global configuration, authorization, data, payments, infrastructure, task ownership, or verification strategy as a potential scope change. Pause implementation when it affects product behavior or commitments; obtain user confirmation and update the PRD before continuing.
+### New Files
+- `path` — purpose, or `TBD` when the path is unconfirmed
+```
 
-### 5.15 Execution Prompts
+List only real paths found through repository inspection or explicit `TBD` entries. During incremental updates, preserve historical files that remain relevant; do not delete them silently.
 
-This must be the final section of `docs/tasks.md`. It contains copyable prompts only; generating the task plan must not execute them.
+### 4.5 Execution Plan (When the User Explicitly Requests Parallel Work)
 
-Create a new-site initialization prompt only when the PRD explicitly requires repository initialization or template migration and the referenced setup script exists. Derive authentication, local data, production data, and storage decisions from the PRD—not from template defaults.
+Generate only when the user explicitly requests multiple AI agents in parallel and at least two parent task packages have independent write boundaries. Include:
 
-For each formal parent task, generate a concise execution prompt:
+- a short round schedule: initial sequential work, parallel stages, and final single-threaded integration;
+- each AI's parent task packages, writable files, prohibited files, and deliverables;
+- one owner for high-conflict files such as `messages/*.json`, routes, page entry points, global styles, schemas, migrations, environment files, and `docs/tasks.md`; and
+- a single-threaded integration and verification stage after parallel work.
+
+Do not parallelize across dependency stages or create a parallel assignment for a Blocked Task. If safe file boundaries cannot be established, omit this section and use single-threaded execution.
+
+### 4.6 Task Packages
+
+Parent task package format:
+
+```md
+### [ ] 1.0 Complete the Core UI
+
+- Status: `Pending`
+- Source: `PAGE-001`, `FR-001`, `ERR-001`
+- Objective: Deliver an independently acceptable result.
+- Boundary / Exclusions: Explicitly prohibit incidental scope expansion in this stage.
+- Dependencies: A prerequisite parent task, configuration, or `None`.
+- Child items:
+  - 1.1 Page structure and primary actions
+  - 1.2 Initial / empty / loading / error / success states
+  - 1.3 i18n copy and responsive behavior
+- Affected files: Real paths and operations; use `TBD` when unknown.
+- AI verification: `T-002`, `T-003`
+- User acceptance: `T-001`
+```
+
+Rules:
+
+- Use consecutively numbered parent headings `### [ ] 1.0`, `2.0`, and so on; do not use `0.0`.
+- Number child items `1.1`, `1.2`; do not use checkboxes.
+- Use specific outcome- or action-based parent titles, not vague titles such as “handle some issues.”
+- `Source` must reference PRD IDs; do not write only “refer to PRD.”
+- `Boundary / Exclusions` prevents UI, API, payment, authentication, or out-of-scope content from entering the same stage.
+- i18n tasks identify resource files and keys; do not hard-code final copy or rewrite user-customized copy.
+- Environment/configuration changes include `env.example`. Schema changes include migration/fixture decisions according to the PRD and repository rules.
+- Verification commands come from repository rules. UI/content tasks do not require `pnpm build` by default unless the user explicitly requests it.
+- After completing AI verification, move the parent task to `Ready for review` and stop.
+- After user approval, mark it `Approved` and `[x]`, then commit the stage according to the execution prompt.
+- During incremental updates, append new parents with continued numbering; do not insert or reorder existing numbers.
+
+### 4.7 Verification Plan
+
+Define each test once; parent tasks reference only its ID.
+
+```md
+| ID | Stage | Scenario | Executor | Page / Entry | Steps or Command | Expected Result | Status |
+|---|---|---|---|---|---|---|---|
+| T-001 | 1.0 | Core UI | User | `/` | ... | ... | Not tested |
+| T-002 | 1.0 | 320 px overflow | AI | `/` | ... | No page-level horizontal scrolling | Not tested |
+```
+
+Test requirements:
+
+- At least one happy-path test for every core user journey.
+- At least one critical failure test for every triggered high-risk capability.
+- UI tasks cover PRD-required initial, empty, invalid, loading, error, success, and result-action states.
+- Cover only relevant responsive breakpoints, including at least `320 / 768 / 1024` and no page-level horizontal scrolling.
+- `Executor: AI` uses deterministic commands, E2E, or reproducible checks and must report evidence.
+- `Executor: User` covers visual quality, interaction feel, real experience, or scenarios requiring human confirmation.
+- Even if a parent has no dedicated User test, it must wait for user confirmation after AI self-checks before the stage ends.
+- Do not generate tests for untriggered capabilities.
+
+### 4.8 Development Rules & Task Management
+
+Generate these concise fixed rules:
+
+```md
+## Development Rules & Task Management
+
+- Follow the PRD, Scope Freeze, and parent-task boundaries strictly; put out-of-scope content in Follow-up / Later.
+- Load final user-facing copy through i18n; do not overwrite user-customized copy.
+- Prefer existing components and semantic tokens; new components follow Component Reuse Summary.
+- Secrets exist only in server-side or deployment-platform secret storage, never in code, Markdown, logs, or screenshots.
+- If scope, business rules, page structure, permissions, data, payments, or SEO indexing surfaces change, pause and update the PRD first, then update tasks.
+- Append necessary new tasks while preserving numbering; create or update a Blocked Task when a blocker is found.
+- When the current parent reaches Ready for review, stop; do not begin the next parent before user confirmation.
+- After user approval, change the status to Approved and the title to [x], then execute the stage's commit instruction.
+```
+
+### 4.9 Execution Prompts
+
+This must be the final second-level section in `docs/tasks.md`. Generate prompts only for formal parent task packages and Confirmation Tasks; do not generate them for Blocked Tasks or Follow-up work.
+
+Single-threaded prompt:
 
 ```text
-### Single-threaded: `<short task summary>`
+Start parent task package <number>: <title>.
 
-Start task <parent task ID>.
-Use the `Boundary / Exclusions` field in docs/tasks.md as the scope limit.
+Strictly follow the Source, Boundary / Exclusions, Dependencies, and file scope defined for this task package in docs/tasks.md. Do not expand scope. At the start, set the status to In progress, complete all child items continuously, and perform the listed AI verification.
 
-When complete:
-- change the parent-task title from [ ] to [x];
-- if implementation files changed, run the required verification and commit with a message beginning with <parent task ID>.
+After AI verification passes:
+- Set the status to Ready for review
+- Report the changes, verification evidence, and test IDs the user must execute
+- Stop and wait for user confirmation; do not begin the next parent task package even when there is no manual browser test
 
-🔴 Manually test item(s) <actual Manual Test number(s)>.
+After user acceptance passes:
+- Set the status to Approved and change the title from [ ] to [x]
+- If implementation files changed, complete the required verification and commit with a message beginning with <number>
+- Do not automatically begin the next parent task package
+
+If user acceptance fails, continue fixing and re-verifying the current parent task package. Do not create a new stage to evade the issue.
 ```
 
-Remove the red reminder when the task has no manual test. Do not generate execution prompts for Blocked Tasks or Follow-up items.
+Use a parallel prompt only when an Execution Plan exists, and additionally state the AI identifier, writable files, and prohibited files. Every parallel parent independently enters `Ready for review`; the single-threaded owner defined in the plan handles shared-file integration and final QA.
 
-When a complete two-agent plan exists, generate one prompt per assigned round with the exact writable and prohibited file boundaries from the ownership table. Add a separate integration prompt for shared-file assembly, routing, and final QA.
+When generating the task document, write only these future execution instructions. Do not execute tasks, change status, or commit.
 
-## 6. Tasks Self-Check
+## V. Incremental Updates to an Existing `docs/tasks.md`
 
-Before saving `docs/tasks.md`, verify that:
+If the file exists, update incrementally by default. Rewrite it entirely only when the user explicitly requests a rebuild.
 
-1. `Scope Freeze` contains only Current Scope, required Existing Baseline treatment, explicit exclusions, and non-executable follow-up work.
-2. The traceability matrix covers every Current Scope ID and every Existing Baseline ID requiring action.
-3. Every formal parent task references at least one PRD ID.
-4. The component reuse summary defines reuse, modification, creation, hidden, and untouched boundaries where relevant.
-5. Files, components, providers, environment variables, and commands come from repository evidence; unknowns use `TBD`.
-6. Open questions and blockers preserve the PRD's blocking status and contain no pretend implementation.
-7. User-facing copy uses i18n and approved copy remains unchanged.
-8. High-risk capabilities and infrastructure are included only when triggered by the PRD.
-9. Applicable interactive states, responsive behavior, error paths, and result actions have tasks and tests.
-10. PRD gaps are marked `Needs review` or blocked rather than filled with invented requirements.
-11. Manual tests and Final Verification cover only in-scope behavior.
-12. Parallel ownership has no overlapping files and includes an integration boundary.
-13. Execution Prompts is the final section and does not instruct an implementer to continue automatically into the next parent task.
-14. The file contains no secrets or realistic credential examples.
+- Preserve `[x]`, `Approved`, `Ready for review`, and `In progress` states.
+- Do not silently delete, rewrite, or reorder historical tasks.
+- When a PRD change invalidates a task, mark it `Superseded` or move it to Follow-up and state the reason.
+- Append new parent task packages at the end of the relevant stage or all formal tasks, continuing numbering.
+- Insert newly triggered conditional sections in output order; do not add empty untriggered sections for formatting completeness.
+- Update Traceability, Relevant Files, Verification Plan, and corresponding Execution Prompts.
+- Set `Last updated` to the actual update date.
 
-Resolve every failed check before saving.
+## VI. Tasks Self-Check
 
-## 7. Final Constraints
+Before saving, verify:
 
-- Generate or update only `docs/tasks.md`. Do not modify product code or begin implementation.
-- Use read-only repository inspection while planning; do not run state-changing commands.
-- Do not repair missing product requirements inside the task plan. Update the PRD or create a blocker.
-- Do not rewrite approved copy; require i18n for final user-facing strings.
-- Do not generate, expose, or demonstrate API keys, secrets, tokens, OAuth credentials, webhook secrets, database URLs, or provider credentials.
+1. Scope Freeze exactly matches the five PRD scope categories.
+2. Every Current Scope ID and Existing Baseline ID requiring closeout appears in traceability.
+3. Every formal or confirmation parent task package references at least one PRD ID.
+4. New ideas without PRD IDs appear only in Follow-up or require a PRD update.
+5. Blocked content contains no real implementation, provider integration, schema, or production-configuration steps.
+6. A local blocker does not prevent generation of unrelated Current Scope tasks.
+7. File paths, component sources, and verification commands come from repository inspection; unknowns use `TBD`.
+8. The Component Reuse table agrees with parent-task files and boundaries.
+9. High-risk capabilities enter dependencies, tasks, and tests only when triggered by the PRD.
+10. Only environment-variable names and purposes are listed; no real secrets or sensitive values appear.
+11. Parent tasks follow natural verification stages and are not split merely to reach a count or mixed with out-of-scope content.
+12. Child items have no checkboxes or independent prompts and are not separate execution units.
+13. Every parent includes status, source, objective, boundary, dependencies, child items, files, and test IDs.
+14. Every test is defined once in Verification Plan; parent tasks reference only IDs.
+15. AI and User executors are explicit, with coverage for core flows and triggered error states.
+16. Every parent task uses the `Ready for review` user gate.
+17. `[x]` means `Approved`, not merely that AI self-checks passed.
+18. No stage-completion commit or next parent begins before user confirmation.
+19. A parallel plan exists only when explicitly requested, with one owner per high-conflict file.
+20. i18n, design tokens, user-customized copy, and component-reuse rules are not bypassed.
+21. UI/content tasks do not require `pnpm build` by default.
+22. Incremental updates do not reset status, reorder numbering, or silently delete historical tasks.
+23. Execution Prompts is the final second-level output section.
+24. The file contains task planning only, not execution code, build output, migrations, or deployment results.
+25. The file is UTF-8 without BOM, mojibake, or garbled text.
+
+## VII. Final Constraints
+
+1. Generate or update only `docs/tasks.md`; do not modify business files or begin implementation.
+2. Do not redefine product requirements, expand scope, or invent PRD IDs in tasks.
+3. Do not output untriggered sections or irrelevant verification merely to fill the template.
+4. Parent task packages are the only formal units of execution and user acceptance; child items describe coverage only.
+5. Every parent task must stop after AI self-checks and wait for user confirmation.
+6. Commit instructions in future execution prompts do not authorize committing during task generation.

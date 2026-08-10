@@ -1,31 +1,5 @@
 # Repository Guidelines
-
-> [!IMPORTANT]
-> **Customize this file before using the workflow in another repository.**
->
-> The project-specific rules below describe an example Next.js SaaS codebase. They are not universal defaults. If your repository uses a different framework, runtime, package manager, directory structure, database, authentication system, payment provider, deployment platform, or test runner, replace the corresponding guidance with rules verified against your repository.
->
-> Before assigning implementation work to an AI coding agent:
->
-> 1. Inspect the actual repository structure and identify application code, shared components, tests, scripts, static assets, documentation, and configuration.
-> 2. Read the package manifest, lockfiles, CI configuration, and existing contributor documentation.
-> 3. Replace the example architecture notes with the frameworks, services, and infrastructure that the project actually uses.
-> 4. List only build, development, formatting, test, migration, and deployment commands that exist in the repository.
-> 5. Document the project's real naming, formatting, module-boundary, i18n, security, and testing conventions.
-> 6. Remove rules for capabilities the project does not use. Do not assume authentication, payments, databases, storage, analytics, AI providers, or cloud deployment merely because they appear in this example.
-> 7. Keep repository instructions aligned with `docs/PRD.md` and `docs/tasks.md`; project-specific implementation rules must not expand the confirmed `Current Scope`.
->
-> At minimum, review and customize these sections:
->
-> - `Project Structure & Module Organization`
-> - `Current Architecture Notes`
-> - `Build, Test, and Development Commands`
-> - `Coding Style & Naming Conventions`
-> - `Testing Guidelines`
-> - `Commit & Pull Request Guidelines`
-> - `Configuration & Secrets`
->
-> If a detail cannot be verified from the repository, write `TBD` and explain how it should be confirmed instead of inventing a rule or command.
+未经批准，禁止开 Subagent
 
 ## Project Structure & Module Organization
 Routes and server actions live in `src/app` (locale-aware pages in `[locale]`). Reusable UI sits in `src/components`—libraries like `ui/`, `magicui/`, `tailark/`, plus domain folders. Shared logic and AI workflows belong in `src/lib` and `src/ai`, while Drizzle schemas and migrations stay in `src/db`. Place transactional emails in `src/mail`, analytics providers in `src/analytics`, static assets in `public/`, operational scripts in `scripts/`, and marketing/docs content in `content/`.
@@ -58,11 +32,18 @@ Use Conventional Commit style.
 
 Keep commits small and focused. Reference issue IDs in the body when relevant. Update `env.example` whenever environment variables change.
 
+Treat every commit message as a future search index for debugging and project history. Write in plain, specific language that explains both what changed and why it changed. A reader should be able to understand the affected behavior without opening the diff.
+
+- Do not use vague subjects such as `update`, `fix`, `changes`, or `misc`.
+- Prefer concrete descriptions such as `fix: make the mobile login button respond to taps`.
+- For non-trivial commits, add a body describing the important behavior changes and the reason for them.
+- When the user asks the AI to commit, the AI must compose this descriptive subject and body automatically instead of asking the user to write them.
+
 PRs must include: short summary, testing notes (commands + results), screenshots for UI changes, and notes for docs/config updates. Highlight breaking changes early.
 
 After each completed task with file changes, provide 1 suggested commit message in a fenced code block (copyable). Do not commit unless explicitly requested.
 
-- When generating or updating task execution prompts, follow `docs/generate-task.md` exactly.
+- When generating or updating task execution prompts, follow `docs/playbooks/generate-task.md` exactly.
 - A commit instruction inside a generated prompt applies to the future execution of that prompt; it does not authorize committing during the current documentation-editing task.
 - Do not remove or weaken generated commit instructions merely because the current task does not authorize an immediate commit.
 
