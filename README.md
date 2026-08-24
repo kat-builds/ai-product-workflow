@@ -1,197 +1,84 @@
-# AI Product Workflow
+# AI Product Workflow Skills
 
-A documentation-first workflow for turning product ideas into implementation-ready engineering tasks with AI assistance.
+A skill-first workflow for turning confirmed product requirements into implementation-ready plans with Codex.
 
-This repository documents a structured process I use to move from a vague product idea to a clear specification, UI brief, development PRD, implementation task list, and final consistency review.
+This repository packages the workflow as two reusable Skills. The workflow rules, templates, references, and validators now live inside each Skill instead of standalone files under `docs/`.
 
-It is designed for small web tools, content-driven products, AI-assisted utilities, and lightweight SaaS-style experiments.
+## Included Skills
 
----
+| Skill | Purpose | Target-project output |
+| --- | --- | --- |
+| `$create-prd` | Create, update, or audit the canonical product requirements document from confirmed requirements and repository facts | `docs/project/PRD.md` |
+| `$generate-tasks` | Convert the PRD into traceable implementation tasks and a user-facing execution prompt | `docs/project/tasks.md` and `docs/project/task-prompt.md` |
 
-## Why This Exists
-
-AI can help generate product documents and development tasks, but without a clear workflow it often:
-
-* expands scope too early
-* invents features that were never requested
-* assumes login, dashboard, payment, or database requirements too soon
-* creates tasks that do not match the PRD
-* copies UI design output without checking product intent
-* skips verification and edge cases
-
-This workflow is designed to keep AI-assisted product development grounded, traceable, and implementation-ready.
-
----
+The output files remain project documentation. Only the reusable workflow instructions have moved from Markdown playbooks to Skills.
 
 ## Workflow
 
 ```text
-Product Idea
-     ↓
-Requirement Discovery
-     ↓
-SPEC / Design Brief
-     ↓
-UI Exploration
-     ↓
-UX Interaction Specification
-     ↓
-Development PRD
-     ↓
-SEO / Keyword Strategy
-     ↓
-Implementation Tasks
-     ↓
-Implementation Review
-     ↓
-Ready for Development
+Confirmed requirements and repository facts
+                    ↓
+               $create-prd
+                    ↓
+         docs/project/PRD.md
+                    ↓
+             $generate-tasks
+                    ↓
+ docs/project/tasks.md + task-prompt.md
+                    ↓
+          Ready for implementation
 ```
-
----
-
-## Workflow Stages
-
-| Stage                        | Purpose                                                                      | Output                      |
-| ---------------------------- | ---------------------------------------------------------------------------- | --------------------------- |
-| Requirement Discovery        | Clarify the idea, user problem, MVP scope, and product direction             | SPEC / Design Brief         |
-| UI Exploration               | Use the SPEC to explore layout, structure, and visual hierarchy              | UI draft / design reference |
-| UX Interaction Specification | Define tool behavior, states, buttons, errors, and edge cases                | UX PRD                      |
-| Development PRD              | Convert the brief and design materials into an implementation-ready PRD      | `docs/PRD.md`               |
-| SEO / Keyword Strategy       | Decide whether keywords belong on the homepage, inner pages, or blog content | Keyword strategy            |
-| Implementation Tasks         | Break the PRD into executable engineering tasks                              | `docs/tasks.md`             |
-| Implementation Review        | Check whether the PRD and tasks are consistent before development            | Review notes                |
-
----
 
 ## Repository Structure
 
 ```text
 .
-├── README.md
+├── create-prd/
+│   ├── SKILL.md
+│   ├── agents/
+│   ├── assets/
+│   ├── references/
+│   └── scripts/
+├── generate-tasks/
+│   ├── SKILL.md
+│   ├── agents/
+│   ├── assets/
+│   ├── references/
+│   ├── scripts/
+│   └── tests/
+├── AGENTS.md
 ├── LICENSE
-│
-└── docs/
-    ├── create-prd.md
-    └── generate-task.md
+└── README.md
 ```
 
-### `docs/create-prd.md`
+Each Skill follows the standard structure: `SKILL.md` contains its metadata and workflow instructions, while optional folders provide supporting templates, references, validation scripts, tests, and UI metadata.
 
-Defines how to generate an implementation-ready PRD from earlier product notes, design references, and confirmed project scope.
+## Use in Codex
 
-It focuses on:
+Make the Skill directories available in a Codex-supported Skill location, then invoke them explicitly in the target project:
 
-* scope control
-* product requirements
-* user flow
-* UI states
-* error handling
-* copy requirements
-* component reuse
-* infrastructure assumptions
-* verification criteria
+```text
+$create-prd Create or update the PRD from the confirmed requirements and current repository facts.
+```
 
-### `docs/generate-task.md`
+After the PRD is confirmed:
 
-Defines how to convert a PRD into a structured implementation task list.
+```text
+$generate-tasks Generate or update the implementation tasks from the current PRD.
+```
 
-It focuses on:
-
-* PRD traceability
-* task sequencing
-* component reuse
-* verification steps
-* avoiding invented scripts or APIs
-* separating current scope from later work
-* preventing unnecessary SaaS complexity
-
----
+Codex can discover repository Skills under `.agents/skills` and personal Skills under `$HOME/.agents/skills`. You can also install a Skill from a repository with `$skill-installer`. See the [official OpenAI Skill documentation](https://developers.openai.com/codex/skills) for current installation and discovery options.
 
 ## Core Principles
 
-* Documentation comes before implementation.
-* AI should clarify ambiguity, not invent product direction.
-* Current scope must be separated from future ideas.
-* Tasks must be traceable to PRD requirements.
-* Existing infrastructure must be verified before new infrastructure is proposed.
-* UI design output is a reference, not the source of truth.
-* Verification should be defined before development starts.
-* Do not add login, dashboard, payment, database, API, or history features unless they are required by the confirmed scope.
-
----
-
-## Intended Use
-
-This workflow is useful for:
-
-* small web tools
-* SEO-driven utility sites
-* AI-assisted product experiments
-* lightweight SaaS prototypes
-* product documentation workflows
-* AI-assisted development planning
-
-It is not intended for large enterprise product planning, high-compliance systems, or projects where requirements must be approved through formal product management processes.
-
----
-
-## Example Use Case
-
-A typical workflow might look like this:
-
-```text
-Idea:
-Build an online DOCX to Markdown converter.
-
-Step 1:
-Clarify the product idea and generate a SPEC / Design Brief.
-
-Step 2:
-Use the SPEC to create a UI draft.
-
-Step 3:
-Document tool-area interactions, states, and edge cases.
-
-Step 4:
-Generate a development-ready PRD.
-
-Step 5:
-Generate implementation tasks from the PRD.
-
-Step 6:
-Review PRD and tasks for consistency before development.
-```
-
----
-
-## What This Project Demonstrates
-
-This project demonstrates:
-
-* AI-assisted product planning
-* technical documentation design
-* requirement clarification
-* PRD structure
-* task breakdown
-* scope control
-* implementation review
-* practical workflow design for solo builders and small product teams
-
----
-
-## Future Improvements
-
-Possible future improvements include:
-
-* adding complete example projects
-* adding SPEC / PRD / tasks samples
-* adding workflow diagrams
-* adding review checklists
-* adding English and Chinese documentation versions
-* adding reusable templates for different project types
-
----
+* Confirm product scope before planning implementation.
+* Keep current scope separate from baseline behavior and future ideas.
+* Trace implementation tasks back to stable PRD requirement IDs.
+* Verify the current repository before proposing infrastructure or commands.
+* Treat design output as a reference, not the source of product requirements.
+* Define verification before implementation begins.
+* Do not assume Auth, Payment, Database, Storage, API, or history features are enabled merely because a template contains them.
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the `LICENSE` file for details.
+This project is licensed under the Apache License 2.0. See `LICENSE` for details.

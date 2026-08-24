@@ -43,7 +43,7 @@ PRs must include: short summary, testing notes (commands + results), screenshots
 
 After each completed task with file changes, provide 1 suggested commit message in a fenced code block (copyable). Do not commit unless explicitly requested.
 
-- When generating or updating task execution prompts, follow `docs/playbooks/generate-task.md` exactly.
+- When generating or updating implementation tasks or task execution prompts, use `$generate-tasks` and follow its current Skill instructions exactly.
 - A commit instruction inside a generated prompt applies to the future execution of that prompt; it does not authorize committing during the current documentation-editing task.
 - Do not remove or weaken generated commit instructions merely because the current task does not authorize an immediate commit.
 
