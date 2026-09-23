@@ -262,7 +262,7 @@ The `❗` marks the current critical-path task.
 <details>
 <summary><strong>▶ Open generated task-prompt.md</strong></summary>
 
-```markdown
+````markdown
 # Credit Balance & Auto-Recharge — Task Execution Prompts
 
 ## Completed
@@ -302,7 +302,7 @@ Execute Task 2.0 from docs/project/tasks.md. Read the complete task first and in
 ```text
 Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and inspect the current implementation. Complete the implementation and verification exactly within the task scope. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit beginning with 3.0.
 ```
-```
+````
 
 </details>
 
