@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Design System"
+  short_description: "建立、更新或审计项目 UI Design System 与 AI 设计守则"
+  default_prompt: "使用 $ui-design-system 检查当前项目的 UI 规则与共享组件，建立或增量更新 docs/project/design/DESIGN_SYSTEM.md；如我明确要求，再安装 AGENTS.md 的 UI 强制规则。不要在这个步骤实现产品 UI。"
