@@ -4,15 +4,14 @@ Three reusable Skills for turning product requirements into a clear PRD, impleme
 
 I built these Skills to make AI-assisted product work more structured and repeatable. Each Skill has one job, its own supporting rules and templates, and validation where it is useful.
 
-> **Agent compatibility:** these Skills use the open `SKILL.md` Agent Skills format and can be used with Codex, Gemini CLI, and Claude Code. Installation paths and invocation syntax differ by tool.
 
 ## At a Glance
 
 | Skill | What it does | Output |
 | --- | --- | --- |
-| [`$create-prd`](./create-prd) | Define what to build before implementation starts | `docs/project/PRD.md` |
-| [`$generate-tasks`](./generate-tasks) | Turn an approved PRD into traceable tasks, dependencies, verification steps, and copy-ready execution prompts | `docs/project/tasks.md` + `docs/project/task-prompt.md` |
-| [`$ui-design-system`](./ui-design-system) | Capture project-specific UI rules so future AI changes can reuse existing patterns consistently | `docs/project/design/DESIGN_SYSTEM.md` |
+| [`create-prd`](./create-prd) | Define what to build before implementation starts | `docs/project/PRD.md` |
+| [`generate-tasks`](./generate-tasks) | Turn an approved PRD into traceable tasks, dependencies, verification steps, and copy-ready execution prompts | `docs/project/tasks.md` + `docs/project/task-prompt.md` |
+| [`ui-design-system`](./ui-design-system) | Capture project-specific UI rules so future AI changes can reuse existing patterns consistently | `docs/project/design/DESIGN_SYSTEM.md` |
 
 Each Skill keeps a different responsibility clear:
 
@@ -22,9 +21,9 @@ Each Skill keeps a different responsibility clear:
 
 ## How the Skills Work Together
 
-`$create-prd` and `$generate-tasks` work as a sequence: define the product first, then turn the approved PRD into implementation tasks.
+`create-prd` and `generate-tasks` work as a sequence: define the product first, then turn the approved PRD into implementation tasks.
 
-`$ui-design-system` is separate. It captures the project's recurring UI rules so future AI changes can reuse existing patterns instead of redesigning each screen. It can be used before UI work, during planning, or later to check for design drift.
+`ui-design-system` is separate. It captures the project's recurring UI rules so future AI changes can reuse existing patterns instead of redesigning each screen. It can be used before UI work, during planning, or later to check for design drift.
 
 ```mermaid
 flowchart LR
@@ -39,40 +38,42 @@ flowchart LR
 
 ## Installation
 
-You can install all three Skills or only the ones you want.
+For the full workflow, install all three Skills. The details are hidden by default so the rest of the README stays easy to scan.
 
 <details>
-<summary><strong>👉 Open installation steps</strong></summary>
+<summary><strong>👉 Show installation steps</strong></summary>
 
-### Which folder does my agent use?
+### Choose where to download the repository
 
-| Agent | Personal Skills folder | Project Skills folder | Direct invocation |
-| --- | --- | --- | --- |
-| **Codex** | `~/.agents/skills/` | `.agents/skills/` | `$create-prd` |
-| **Gemini CLI** | `~/.agents/skills/` or `~/.gemini/skills/` | `.agents/skills/` or `.gemini/skills/` | Gemini can activate a matching Skill; use `/skills list` to confirm discovery |
-| **Claude Code** | `~/.claude/skills/` | `.claude/skills/` | `/create-prd` |
+The repository can be downloaded anywhere on your computer. This is only the source folder you copy the Skills from — it is not the final Skills location.
 
-The steps below use a **personal installation**, which makes the Skills available across your projects on that computer.
-
-### 1. Download this repository
-
-Open Terminal and run:
+For example, download it into your Downloads folder:
 
 ```bash
+cd ~/Downloads
 git clone https://github.com/kat-builds/ai-product-workflow.git
-```
-
-This downloads a folder named `ai-product-workflow` to your current location.
-
-### 2. Open the downloaded folder in Terminal
-
-```bash
 cd ai-product-workflow
 ```
 
-The next commands are run from inside this folder.
+You can replace `~/Downloads` with any folder you prefer.
 
-### 3. Install for Codex or Gemini CLI
+### Install all three Skills — recommended
+
+The three Skills are designed to work together:
+
+```text
+create-prd
+    ↓
+PRD
+    ↓
+generate-tasks
+
+ui-design-system
+    ↓
+UI rules that guide implementation
+```
+
+#### Codex or Gemini CLI
 
 Create the shared personal Skills folder if it does not already exist:
 
@@ -80,7 +81,7 @@ Create the shared personal Skills folder if it does not already exist:
 mkdir -p ~/.agents/skills
 ```
 
-Copy all three Skill folders into it:
+Copy all three Skills:
 
 ```bash
 cp -R create-prd ~/.agents/skills/
@@ -88,24 +89,9 @@ cp -R generate-tasks ~/.agents/skills/
 cp -R ui-design-system ~/.agents/skills/
 ```
 
-What these commands do:
+#### Claude Code
 
-- `mkdir -p` creates the Skills folder only if it is missing.
-- `cp -R` copies the complete Skill folder, including `SKILL.md`, references, templates, scripts, and tests.
-
-For **Codex**, you can then invoke the Skills with `$create-prd`, `$generate-tasks`, and `$ui-design-system`.
-
-For **Gemini CLI**, run:
-
-```text
-/skills list
-```
-
-to confirm that Gemini discovered them.
-
-### 4. Install for Claude Code instead
-
-If you use Claude Code, copy the same Skills into Claude's personal Skills folder:
+Claude Code uses its own personal Skills folder:
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -115,42 +101,28 @@ cp -R generate-tasks ~/.claude/skills/
 cp -R ui-design-system ~/.claude/skills/
 ```
 
-Then invoke them with:
+### Install for one project only
 
-```text
-/create-prd
-/generate-tasks
-/ui-design-system
-```
+Use this when you want the Skills available only inside one repository instead of across all projects on your computer.
 
-### 5. Install only one Skill
+- **Codex / Gemini CLI:** copy the Skill folders into `.agents/skills/` inside the target project.
+- **Claude Code:** copy the Skill folders into `.claude/skills/` inside the target project.
 
-You do not need all three.
+### Install an individual Skill — optional
 
-For example, to install only the Design System Skill for Codex or Gemini CLI:
+The full three-Skill setup is recommended, but the Skills can also be used separately when the required input already exists:
 
-```bash
-mkdir -p ~/.agents/skills
-cp -R ui-design-system ~/.agents/skills/
-```
+- **`create-prd`** can be used on its own to create or maintain a PRD.
+- **`ui-design-system`** can be used on its own to establish or audit UI rules.
+- **`generate-tasks`** can be used on its own when the project already has a validated `docs/project/PRD.md`.
 
-For Claude Code:
+### Skill locations and invocation
 
-```bash
-mkdir -p ~/.claude/skills
-cp -R ui-design-system ~/.claude/skills/
-```
-
-<details>
-<summary><strong>👉 Install Skills for one project only</strong></summary>
-
-Use this when you want the Skills available only inside one repository rather than across all of your projects.
-
-For Codex or Gemini CLI, copy the Skill folders into your target project's `.agents/skills/` directory.
-
-For Claude Code, copy them into the target project's `.claude/skills/` directory.
-
-</details>
+| Agent | Personal Skills folder | Project Skills folder | Example invocation |
+| --- | --- | --- | --- |
+| **Codex** | `~/.agents/skills/` | `.agents/skills/` | `$create-prd` |
+| **Gemini CLI** | `~/.agents/skills/` or `~/.gemini/skills/` | `.agents/skills/` or `.gemini/skills/` | Use `/skills list` to confirm discovery |
+| **Claude Code** | `~/.claude/skills/` | `.claude/skills/` | `/create-prd` |
 
 For current host-specific behavior, see the official documentation for [OpenAI Skills](https://developers.openai.com/codex/skills), [Gemini CLI Agent Skills](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/skills.md), and [Claude Code Skills](https://code.claude.com/docs/en/skills).
 
@@ -158,45 +130,50 @@ For current host-specific behavior, see the official documentation for [OpenAI S
 
 ## Quick Start
 
-After installation, invoke the Skill you need from the project you are working on.
+The examples below show the Skill name and the instruction to give it. Use your coding agent's normal Skill invocation syntax.
 
-### Create or update product requirements
+### Define or update product requirements
 
-**Codex**
+**Skill:** `create-prd`
 
 ```text
-$create-prd Create or update the PRD from the requirements and current repository.
+Create or update the PRD from the requirements and current repository.
 ```
 
 ### Create or review UI rules
 
-**Codex**
+**Skill:** `ui-design-system`
 
 ```text
-$ui-design-system Initialize the project's Design System from its current UI patterns and shared components.
+Initialize the project's Design System from its current UI patterns and shared components.
 ```
 
 ### Generate implementation tasks
 
-**Codex**
+**Skill:** `generate-tasks`
 
 ```text
-$generate-tasks Generate implementation tasks from the current PRD.
+Generate implementation tasks from the current PRD.
 ```
-
 
 ## Worked Example
 
-The example below shows how the three Skills can work together on one feature.
+The same workflow can be used for a new website, a larger product change, or one feature inside an existing product.
+
+This walkthrough uses one feature inside an existing web app because it keeps the example small enough to follow while still showing the handoff between product requirements, UI rules, task planning, status, and execution prompts.
 
 **Scenario:** add a user credit balance with automatic Stripe recharge when the balance drops below a chosen threshold.
 
-For this example, the Design System Skill is used before task generation because the feature includes new UI. It can also be used independently in other workflows.
+For this example, the Design System Skill is used before task generation because the feature includes new UI.
 
-### Step 1 — Define the product with `$create-prd`
+### Step 1 — Define the product with `create-prd`
+
+**Skill:** `create-prd`
+
+**Example prompt**
 
 ```text
-$create-prd Add user credit balance with automatic Stripe recharge when balance drops below threshold.
+Add user credit balance with automatic Stripe recharge when balance drops below threshold.
 ```
 
 **What this Skill does here**
@@ -211,7 +188,7 @@ It checks the current repository, resolves important product decisions, keeps no
 - a validated PRD ready for planning
 
 <details>
-<summary><strong>👉 Open generated PRD</strong></summary>
+<summary><strong>👉 See what the generated PRD looks like</strong></summary>
 
 ```markdown
 # Product Requirements Document: Credit Balance & Auto-Recharge
@@ -244,10 +221,14 @@ It checks the current repository, resolves important product decisions, keeps no
 
 </details>
 
-### Step 2 — Capture UI rules with `$ui-design-system`
+### Step 2 — Capture UI rules with `ui-design-system`
+
+**Skill:** `ui-design-system`
+
+**Example prompt**
 
 ```text
-$ui-design-system Update the Design System for the credit status badge and auto-recharge settings.
+Update the Design System for the credit status badge and auto-recharge settings.
 ```
 
 **What this Skill does here**
@@ -262,7 +243,7 @@ It uses the approved product requirements as context, then updates the project's
 - a project-level reference future AI changes can follow
 
 <details>
-<summary><strong>👉 Open generated Design System</strong></summary>
+<summary><strong>👉 See what the generated Design System looks like</strong></summary>
 
 ```markdown
 # UI Design System: Billing & Balance Primitives
@@ -290,10 +271,14 @@ It uses the approved product requirements as context, then updates the project's
 
 </details>
 
-### Step 3 — Plan and execute with `$generate-tasks`
+### Step 3 — Plan and execute with `generate-tasks`
+
+**Skill:** `generate-tasks`
+
+**Example prompt**
 
 ```text
-$generate-tasks Generate implementation tasks for Credit Balance & Auto-Recharge from the validated PRD.
+Generate implementation tasks for Credit Balance & Auto-Recharge from the validated PRD.
 ```
 
 **What this Skill does here**
@@ -303,7 +288,7 @@ It uses the approved PRD as the source of scope, checks the Design System for re
 It produces two files with different jobs:
 
 - **`tasks.md`** — the complete task plan and source of truth.
-- **`task-prompt.md`** — the simpler execution view: what is done, what is next, and the exact prompt to copy to Codex.
+- **`task-prompt.md`** — the simpler execution view: what is done, what is next, and the exact prompt to copy to your coding agent.
 
 #### Task status
 
@@ -318,7 +303,7 @@ It produces two files with different jobs:
 `task-prompt.md` keeps completed task IDs visible, shows unfinished work in recommended execution order, and marks the current critical-path task with `❗`.
 
 <details>
-<summary><strong>👉 Open generated tasks.md</strong></summary>
+<summary><strong>👉 See what the generated task plan looks like</strong></summary>
 
 ```markdown
 # Implementation Tasks: Credit Balance & Auto-Recharge
@@ -370,7 +355,7 @@ Remaining
 The `❗` marks the current critical-path task.
 
 <details>
-<summary><strong>👉 Open generated task-prompt.md</strong></summary>
+<summary><strong>👉 See what the execution prompts look like</strong></summary>
 
 ````markdown
 # Credit Balance & Auto-Recharge — Task Execution Prompts
@@ -389,10 +374,10 @@ The `❗` marks the current critical-path task.
 - Conflicts with: 3.0
 
 - Now: The project can store credit balances and recharge settings, but it cannot charge or update a balance through Stripe yet.
-- This task: Codex will connect the recharge service and webhook flow using Stripe test mode.
+- This task: The coding agent will connect the recharge service and webhook flow using Stripe test mode.
 - After: A successful test payment can update the user's balance through the real integration path.
 
-**Prompt to send to Codex**
+**Prompt to send to your coding agent**
 
 ```text
 Execute Task 2.0 from docs/project/tasks.md. Read the complete task first and inspect the current implementation. Complete the implementation and verification exactly within the task scope. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit beginning with 2.0.
@@ -404,10 +389,10 @@ Execute Task 2.0 from docs/project/tasks.md. Read the complete task first and in
 - Conflicts with: 2.0
 
 - Now: Users cannot see their balance or manage auto-recharge.
-- This task: Codex will add the balance status and recharge settings UI using the project Design System.
+- This task: The coding agent will add the balance status and recharge settings UI using the project Design System.
 - After: Users can see their current balance and configure auto-recharge from the dashboard.
 
-**Prompt to send to Codex**
+**Prompt to send to your coding agent**
 
 ```text
 Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and inspect the current implementation. Complete the implementation and verification exactly within the task scope. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit beginning with 3.0.
