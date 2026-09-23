@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -81,17 +82,42 @@ def task_prompt_entry(
 def prompt_document(
     *entries: str,
     completed_ids: tuple[str, ...] = (),
+    unfinished_ids: tuple[str, ...] | None = None,
+    important_ids: tuple[str, ...] = (),
+    title: str = "Example Project — Task Execution Prompts",
 ) -> str:
     completed = ""
     if completed_ids:
         completed = "## 已完成\n" + "、".join(completed_ids) + "\n\n"
-    return f"""# Task Execution Prompts
+    if unfinished_ids is None:
+        unfinished_ids = tuple(
+            match.group(1)
+            for entry in entries
+            if (match := re.search(r"^## Task (\d+\.0) —", entry))
+        )
+    unfinished = ""
+    if unfinished_ids:
+        unfinished = (
+            "## 未完成\n"
+            + "、".join(
+                f"❗{task_id}" if task_id in important_ids else task_id
+                for task_id in unfinished_ids
+            )
+            + "\n\n"
+        )
+        if not important_ids:
+            unfinished = unfinished.replace(
+                unfinished_ids[0],
+                f"❗{unfinished_ids[0]}",
+                1,
+            )
+    return f"""# {title}
 
 Last updated: 2026-08-14
 
-> 文档角色说明：本文件是给用户复制 Prompt 的派生执行入口，不是任务定义。任务范围以 docs/project/tasks.md 为准。
+> 本文件仅供复制 Prompt；任务定义以 docs/project/tasks.md 为准。
 
-{completed}{''.join(entries)}"""
+{completed}{unfinished}{''.join(entries)}"""
 
 
 class ParentContractTests(unittest.TestCase):
@@ -150,6 +176,57 @@ class TaskPromptValidationTests(unittest.TestCase):
         )
         errors = self.validate(text, parents)
         self.assertTrue(any("must not contain Next task" in error for error in errors))
+
+    def test_rejects_title_without_project_name_or_domain(self) -> None:
+        parents = {"1.0": make_parent("1.0", title="First")}
+        text = prompt_document(
+            task_prompt_entry("1.0", "First"),
+            title="Task Execution Prompts",
+        )
+        errors = self.validate(text, parents)
+        self.assertTrue(any("项目名或域名" in error for error in errors))
+
+    def test_accepts_unfinished_summary_in_prompt_order_with_critical_mark(self) -> None:
+        parents = {
+            "1.0": make_parent("1.0", title="First"),
+            "2.0": make_parent("2.0", title="Second"),
+        }
+        text = prompt_document(
+            task_prompt_entry("2.0", "Second"),
+            task_prompt_entry("1.0", "First"),
+            important_ids=("2.0",),
+        )
+        self.assertEqual(self.validate(text, parents), [])
+
+    def test_rejects_unfinished_summary_out_of_prompt_order(self) -> None:
+        parents = {
+            "1.0": make_parent("1.0", title="First"),
+            "2.0": make_parent("2.0", title="Second"),
+        }
+        text = prompt_document(
+            task_prompt_entry("2.0", "Second"),
+            task_prompt_entry("1.0", "First"),
+            unfinished_ids=("1.0", "2.0"),
+            important_ids=("2.0",),
+        )
+        errors = self.validate(text, parents)
+        self.assertTrue(any("IDs and order must match" in error for error in errors))
+
+    def test_rejects_unfinished_summary_without_critical_mark(self) -> None:
+        parents = {"1.0": make_parent("1.0", title="First")}
+        text = prompt_document(
+            task_prompt_entry("1.0", "First"),
+        ).replace("❗1.0", "1.0", 1)
+        errors = self.validate(text, parents)
+        self.assertTrue(any("critical-path Task" in error for error in errors))
+
+    def test_rejects_missing_unfinished_summary(self) -> None:
+        parents = {"1.0": make_parent("1.0", title="First")}
+        text = prompt_document(
+            task_prompt_entry("1.0", "First"),
+        ).replace("## 未完成\n❗1.0\n\n", "", 1)
+        errors = self.validate(text, parents)
+        self.assertTrue(any("exactly one '## 未完成'" in error for error in errors))
 
     def test_rejects_dependent_before_unfinished_dependency(self) -> None:
         parents = {
@@ -349,10 +426,14 @@ class CanonicalTemplateTests(unittest.TestCase):
         self.assertNotIn("Next task:", self.prompt_template)
         self.assertNotIn("Execution mode:", self.prompt_template)
         self.assertNotIn("使用方法：", self.prompt_template)
-        self.assertIn("## Task 1.0 —", self.prompt_template)
+        self.assertIn("# <项目名或域名> — Task Execution Prompts", self.prompt_template)
+        self.assertIn("## 已完成", self.prompt_template)
+        self.assertIn("## 未完成", self.prompt_template)
+        self.assertIn("❗2.0、3.0", self.prompt_template)
+        self.assertIn("## Task 2.0 —", self.prompt_template)
         self.assertNotIn("当前是否可以开始：", self.prompt_template)
         self.assertIn("依赖：", self.prompt_template)
-        self.assertIn("- 依赖：1.0", self.prompt_template)
+        self.assertIn("- 依赖：2.0", self.prompt_template)
         self.assertNotIn("### 这项任务是做什么的", self.prompt_template)
         self.assertNotIn("### 发给 Codex 的 Prompt", self.prompt_template)
         self.assertIn("**发给 Codex 的 Prompt**", self.prompt_template)

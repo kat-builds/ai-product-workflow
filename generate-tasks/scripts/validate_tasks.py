@@ -131,9 +131,10 @@ TASK_STATUS_LEGEND = (
     "✅ Approved · ⛔ Blocked"
 )
 
-TASK_PROMPT_TITLE = "Task Execution Prompts"
-TASK_PROMPT_ROLE = "本文件是给用户复制 Prompt 的派生执行入口"
+TASK_PROMPT_TITLE_SUFFIX = "Task Execution Prompts"
+TASK_PROMPT_ROLE = "本文件仅供复制 Prompt"
 TASK_PROMPT_COMPLETED_TITLE = "已完成"
+TASK_PROMPT_UNFINISHED_TITLE = "未完成"
 TASK_PROMPT_HEADING = re.compile(r"^Task (\d+\.0) — (.+)$")
 TASK_PROMPT_OBSOLETE_TOP_GUIDANCE = re.compile(
     r"^(?:Next task:|Execution mode:|Execution mode rationale:|>?\s*使用方法：)",
@@ -1754,7 +1755,10 @@ def task_prompt_blocks(
     result: list[tuple[str, str, str]] = []
     seen: set[str] = set()
     for heading, block in child_blocks(text, 2):
-        if heading.title == TASK_PROMPT_COMPLETED_TITLE:
+        if heading.title in {
+            TASK_PROMPT_COMPLETED_TITLE,
+            TASK_PROMPT_UNFINISHED_TITLE,
+        }:
             continue
         match = TASK_PROMPT_HEADING.fullmatch(heading.title)
         if not match:
@@ -1780,9 +1784,17 @@ def validate_task_prompt(
 ) -> None:
     headings = markdown_headings(text)
     h1_titles = [heading.title for heading in headings if heading.level == 1]
-    if h1_titles != [TASK_PROMPT_TITLE]:
+    if (
+        len(h1_titles) != 1
+        or not re.fullmatch(
+            rf".+ — {re.escape(TASK_PROMPT_TITLE_SUFFIX)}",
+            h1_titles[0],
+        )
+        or h1_titles[0].startswith("<")
+    ):
         errors.append(
-            f"task-prompt.md must contain exactly one '# {TASK_PROMPT_TITLE}' title."
+            "task-prompt.md must contain exactly one "
+            "'# <项目名或域名> — Task Execution Prompts' title with a resolved name."
         )
     if TASK_PROMPT_ROLE not in text:
         errors.append(
@@ -1823,6 +1835,11 @@ def validate_task_prompt(
         for heading in headings
         if heading.level == 2 and heading.title == TASK_PROMPT_COMPLETED_TITLE
     ]
+    unfinished_headings = [
+        heading
+        for heading in headings
+        if heading.level == 2 and heading.title == TASK_PROMPT_UNFINISHED_TITLE
+    ]
     if approved_ids:
         if len(completed_headings) != 1:
             errors.append(
@@ -1860,6 +1877,81 @@ def validate_task_prompt(
         errors.append(
             "task-prompt.md must omit '## 已完成' when no Approved parents exist."
         )
+
+    if incomplete:
+        if len(unfinished_headings) != 1:
+            errors.append(
+                "task-prompt.md must contain exactly one '## 未完成' section "
+                "when unfinished parents exist."
+            )
+        else:
+            unfinished_block = heading_block(text, 2, TASK_PROMPT_UNFINISHED_TITLE)
+            unfinished_lines = [
+                line.strip()
+                for line in unfinished_block.splitlines()[1:]
+                if line.strip() and not line.lstrip().startswith("<!--")
+            ]
+            if len(unfinished_lines) != 1:
+                errors.append(
+                    "task-prompt.md '## 未完成' must contain exactly one "
+                    "non-empty line of Task IDs."
+                )
+            else:
+                unfinished_tokens = unfinished_lines[0].split("、")
+                if any(
+                    not re.fullmatch(r"❗?\d+\.0", token)
+                    for token in unfinished_tokens
+                ):
+                    errors.append(
+                        "task-prompt.md '## 未完成' must use Task IDs, optionally "
+                        "prefixed by ❗, joined by Chinese delimiter '、'."
+                    )
+                unfinished_ids = [
+                    token.removeprefix("❗") for token in unfinished_tokens
+                ]
+                if len(unfinished_ids) != len(set(unfinished_ids)):
+                    errors.append("task-prompt.md '## 未完成' repeats a Task ID.")
+                if unfinished_ids != ordered_ids:
+                    errors.append(
+                        "task-prompt.md '## 未完成' IDs and order must match the "
+                        "Task sections below."
+                    )
+                if not any(token.startswith("❗") for token in unfinished_tokens):
+                    errors.append(
+                        "task-prompt.md '## 未完成' must mark at least one current "
+                        "critical-path Task with ❗."
+                    )
+    elif unfinished_headings:
+        errors.append(
+            "task-prompt.md must omit '## 未完成' when no unfinished parents exist."
+        )
+
+    summary_positions = {
+        heading.title: heading.start
+        for heading in headings
+        if heading.level == 2
+        and heading.title in {
+            TASK_PROMPT_COMPLETED_TITLE,
+            TASK_PROMPT_UNFINISHED_TITLE,
+        }
+    }
+    first_task_position = min(
+        (
+            heading.start
+            for heading in headings
+            if TASK_PROMPT_HEADING.fullmatch(heading.title)
+        ),
+        default=len(text),
+    )
+    if any(position > first_task_position for position in summary_positions.values()):
+        errors.append("task-prompt.md summary sections must appear before Task sections.")
+    if (
+        TASK_PROMPT_COMPLETED_TITLE in summary_positions
+        and TASK_PROMPT_UNFINISHED_TITLE in summary_positions
+        and summary_positions[TASK_PROMPT_COMPLETED_TITLE]
+        > summary_positions[TASK_PROMPT_UNFINISHED_TITLE]
+    ):
+        errors.append("task-prompt.md '## 已完成' must appear before '## 未完成'.")
 
     if incomplete:
         if not entries:

@@ -1,6 +1,6 @@
 # Multi-Agent Execution 规则
 
-更新日期：2026-08-14
+更新日期：2026-08-21
 
 > 目标：在正确性和风险可控的前提下缩短 time-to-correct-completion。本文件只规定如何在 `docs/project/task-prompt.md` 表达并行 batches、Main Manager、Worker Prompt 和交接；canonical `docs/project/tasks.md` 始终只定义任务，不保存这些运行时调度信息。
 
@@ -116,10 +116,11 @@ Main Manager 只承担整合职责，不抢占可交给 Worker 的普通开发�
 
 文档顺序：
 
-1. 文档角色说明；
+1. 包含已确认项目名或域名的一级标题及文档角色说明；
 2. 若存在 Approved parent，按实际完成时间排列的 `## 已完成`；
-3. 一份完整 Main Manager Kickoff `text` Prompt；
-4. 按 batch 顺序排列的所有未完成 `## Task X.X — <标题>`。
+3. 若存在未完成 parent，与下方 Task 顺序一致并用 `❗` 标出 critical path Task 的 `## 未完成`；
+4. 一份完整 Main Manager Kickoff `text` Prompt；
+5. 按 batch 顺序排列的所有未完成 `## Task X.X — <标题>`。
 
 不输出 `Next task`、`Execution mode`、rationale 或使用方法。首个 batch 中稳定展示的第一项放在最前，batch 元数据说明同批还有哪些 Task 可并行。没有未完成 parent 时不输出 kickoff 或 Task 小节。
 
@@ -215,7 +216,7 @@ Main Manager merge 前必须：
 2. 每个 batch 只含 runnable 或明确 contract-locked Task；Waiting/Blocked 有真实 unlock condition。
 3. 唯一 Main Manager、merge gate、branch/worktree、file owner 和 shared contract 清楚。
 4. `tasks.md` 没有任何 Execution Plan、Worker metadata、Prompt 或 Stop Condition。
-5. `task-prompt.md` 的已完成时间顺序、batches、未完成 parent 和依赖与 canonical 状态一致，且没有顶部调度提示。
+5. `task-prompt.md` 的项目名或域名、已完成时间顺序、未完成汇总与 critical path 标记、batches、未完成 parent 和依赖与 canonical 状态一致，且没有顶部调度提示。
 6. 每个 Task 保留简短依赖、通俗说明和粗体 Prompt 标识；通俗说明使用真实用户动作与结果，不复制技术合同或空泛工程话，Worker Prompt 不复制整个 PRD/Task Package。
 7. 每个 Worker Prompt 包含唯一 Task/branch、边界、focused validation、main prohibition、commit 和 Completion Report；Worker 不修改两份任务文档。
 8. Main Manager kickoff 完整可复制，并明确由用户创建 Worktree chats；生成 Skill 本身不启动 Worker/Subagent。
