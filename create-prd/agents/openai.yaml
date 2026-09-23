@@ -1,4 +1,4 @@
 interface:
   display_name: "Create PRD"
   short_description: "Create or update a scoped, validated product PRD"
-  default_prompt: "Use $create-prd to create or update docs/project/PRD.md from confirmed requirements and repository facts without starting implementation."
+  default_prompt: "Use $create-prd to create or update docs/project/PRD.md from confirmed requirements and repository facts. After validation, synchronize derived Task documents in the same turn only when the PRD handoff rule permits it; do not start implementation."
