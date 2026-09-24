@@ -54,22 +54,9 @@ When I am ready to continue, I can just copy the next prompt and give it to the 
 
 So most of the time, I only need this file. `tasks.md` keeps the full implementation plan in the background.
 
-
-## `design-svg-logo-pack`
-
-This one is separate from the product workflow above.
-
-I got tired of asking AI for a logo and then still needing to sort out the favicon, dark version, app icons, social image, colors and file paths myself.
-
-`design-svg-logo-pack` checks the actual project first — the product context, current visual language, theme tokens, Design System and existing asset paths — then creates the logo, icon and social asset set the project actually needs.
-
-It does not force a rounded, sharp or "AI-looking" style. The geometry, colors and variants come from the project.
-
 ## How I Use Them Together
 
-The first three Skills make up the product workflow. `design-svg-logo-pack` is separate and can be used whenever the project needs brand assets.
-
-For most product changes, I start with the PRD.
+For most changes, I start with the PRD.
 
 If the change involves UI, I check the Design System before creating the tasks. That way the UI rules are already clear before the implementation plan is written.
 
@@ -114,16 +101,13 @@ Unzip the downloaded file. You only need this folder to install the Skills, so y
 
 ### 2. Install the Skills
 
-The downloaded folder contains four Skills:
+The downloaded folder contains three Skills:
 
 ```text
 create-prd
-ui-design-system
 generate-tasks
-design-svg-logo-pack
+ui-design-system
 ```
-
-The first three make up the product workflow. `design-svg-logo-pack` is a separate brand-asset Skill.
 
 Open Terminal and go into the unzipped `ai-product-workflow` folder first.
 
@@ -143,9 +127,8 @@ Run:
 mkdir -p ~/.agents/skills
 
 cp -R create-prd ~/.agents/skills/
-cp -R ui-design-system ~/.agents/skills/
 cp -R generate-tasks ~/.agents/skills/
-cp -R design-svg-logo-pack ~/.agents/skills/
+cp -R ui-design-system ~/.agents/skills/
 ```
 
 You should now have:
@@ -153,9 +136,8 @@ You should now have:
 ```text
 ~/.agents/skills/
 ├── create-prd/
-├── ui-design-system/
 ├── generate-tasks/
-└── design-svg-logo-pack/
+└── ui-design-system/
 ```
 
 #### Option B — Use your agent's own Skills folder
@@ -168,9 +150,8 @@ If your coding agent uses its own Skills folder, change the destination path.
 mkdir -p ~/.gemini/skills
 
 cp -R create-prd ~/.gemini/skills/
-cp -R ui-design-system ~/.gemini/skills/
 cp -R generate-tasks ~/.gemini/skills/
-cp -R design-svg-logo-pack ~/.gemini/skills/
+cp -R ui-design-system ~/.gemini/skills/
 ```
 
 **Claude Code**
@@ -179,9 +160,8 @@ cp -R design-svg-logo-pack ~/.gemini/skills/
 mkdir -p ~/.claude/skills
 
 cp -R create-prd ~/.claude/skills/
-cp -R ui-design-system ~/.claude/skills/
 cp -R generate-tasks ~/.claude/skills/
-cp -R design-svg-logo-pack ~/.claude/skills/
+cp -R ui-design-system ~/.claude/skills/
 ```
 
 If you use several coding agents, I prefer keeping one shared copy where possible instead of maintaining multiple copies of the same Skills.
@@ -195,17 +175,16 @@ I downloaded and unzipped ai-product-workflow here:
 
 <PATH_TO_AI_PRODUCT_WORKFLOW>
 
-It contains four Skills:
+It contains three Skills:
 - create-prd
-- ui-design-system
 - generate-tasks
-- design-svg-logo-pack
+- ui-design-system
 
 Please inspect my current coding-agent setup and find the supported personal Skills directory for each coding agent I have installed.
 
 I would prefer to keep one shared copy under ~/.agents/skills where possible instead of maintaining duplicate copies.
 
-If an agent supports ~/.agents/skills, install the four Skills there.
+If an agent supports ~/.agents/skills, install the three Skills there.
 
 If an agent requires its own Skills directory, use its supported directory instead.
 
@@ -214,7 +193,7 @@ Before changing anything, tell me:
 2. which Skills directory each one uses,
 3. exactly what you plan to install or link.
 
-Then install them. Keep the first three product-workflow Skills together; design-svg-logo-pack can be installed alongside them as an independent Skill.
+Then install them.
 
 Do not modify the Skill files themselves.
 ```
@@ -255,7 +234,7 @@ You can simply delete it. The copies inside your Skills folder will stay there.
 
 These Skills do not need a special code structure.
 
-The three product-workflow Skills mainly work with a few files under `docs/project/`:
+They mainly work with a few files under `docs/project/`:
 
 ```text
 docs/
@@ -273,8 +252,6 @@ docs/
 - `task-prompt.md` is the working to-do/done list I use with AI.
 
 Your project can have any other docs or code structure around these. The Skills do not require a specific framework, folder structure, or tech stack.
-
-`design-svg-logo-pack` does not add another project document. It follows the repository's existing asset structure and updates the logo, favicon, app-icon, manifest or social-image paths that the project actually uses.
 
 ## Quick Start
 
@@ -310,16 +287,6 @@ Create the tasks from the current PRD.
 ```
 
 After that, I normally work from `task-prompt.md` and copy the next prompt when I am ready to continue.
-
-### Create or refresh the brand asset pack
-
-**Skill:** `design-svg-logo-pack`
-
-```text
-Check the current project and create the logo, favicon, app-icon and social-image assets it actually needs. Follow the existing visual language and theme instead of forcing a new style.
-```
-
-This Skill is independent of the PRD → Design System → tasks workflow.
 
 ## Example
 
@@ -565,10 +532,6 @@ Each top-level directory is one Skill:
 │   ├── locales/
 │   ├── references/
 │   └── scripts/
-├── design-svg-logo-pack/
-│   ├── SKILL.md
-│   ├── agents/
-│   └── references/
 ├── AGENTS.md
 ├── LICENSE
 └── README.md

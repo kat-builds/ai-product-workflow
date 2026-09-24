@@ -2,14 +2,13 @@
 
 ## Purpose & Repository Boundaries
 
-This repository packages reusable AI workflow Skills. It contains no application code. The first three Skills form the core product workflow; additional Skills may cover independent repeatable jobs.
+This repository packages reusable AI product-workflow Skills. It contains no application code.
 
 Each top-level directory is one Skill:
 
 - `create-prd/` — create, update, or audit a target project's `docs/project/PRD.md`.
 - `generate-tasks/` — derive `docs/project/tasks.md` and `docs/project/task-prompt.md` from a validated PRD.
 - `ui-design-system/` — initialize, update, preflight, or audit a target project's `docs/project/design/DESIGN_SYSTEM.md`, and optionally install a minimal Design System guardrail into the applicable project/agent instruction file.
-- `design-svg-logo-pack/` — inspect a target project's product context, visual language, tokens, and real asset usage, then create or update the logo/favicon/app-icon/social asset pack without imposing a fixed logo style.
 
 A Skill may contain:
 
@@ -108,7 +107,6 @@ When syncing these Skills from another maintained source, treat only these direc
 - `create-prd/`
 - `generate-tasks/`
 - `ui-design-system/`
-- `design-svg-logo-pack/`
 
 Do not overwrite repository-owned files such as `README.md`, `AGENTS.md`, or `LICENSE` as part of a Skill-directory sync unless the current task explicitly requires those files to change.
 
