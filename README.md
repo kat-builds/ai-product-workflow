@@ -90,46 +90,71 @@ If a new UI pattern turns out to be worth reusing, I can update the Design Syste
 
 ## Installation
 
-For the full workflow, install all three Skills and use the ones you need for each change.
-
 <details>
 <summary><strong>👉 Show installation steps</strong></summary>
 
-### Choose where to download the repository
+### 1. Download the repository
 
-The repository can be downloaded anywhere on your computer. This is only the source folder you copy the Skills from — it is not the final Skills location.
+Click the green **Code** button at the top of this page, then choose **Download ZIP**.
+
+Unzip the downloaded file. You only need this folder to install the Skills, so you can delete it later.
+
+### 2. Install the Skills
+
+The downloaded folder contains three Skills:
+
+```text
+create-prd
+generate-tasks
+ui-design-system
+```
+
+Open Terminal and go into the unzipped `ai-product-workflow` folder first.
 
 For example:
 
 ```bash
-cd ~/Downloads
-git clone https://github.com/kat-builds/ai-product-workflow.git
-cd ai-product-workflow
+cd ~/Downloads/ai-product-workflow-main
 ```
 
-You can replace `~/Downloads` with any folder you prefer.
+#### Option A — Use the shared personal Skills folder
 
-### Install all three Skills
+If your coding agent supports the shared personal Skills folder, this is the simplest option.
 
-#### Codex or Gemini CLI
-
-Create the shared personal Skills folder if it does not already exist:
+Run:
 
 ```bash
 mkdir -p ~/.agents/skills
-```
 
-Copy all three Skills:
-
-```bash
 cp -R create-prd ~/.agents/skills/
 cp -R generate-tasks ~/.agents/skills/
 cp -R ui-design-system ~/.agents/skills/
 ```
 
-#### Claude Code
+You should now have:
 
-Claude Code uses its own personal Skills folder:
+```text
+~/.agents/skills/
+├── create-prd/
+├── generate-tasks/
+└── ui-design-system/
+```
+
+#### Option B — Use your agent's own Skills folder
+
+If your coding agent uses its own Skills folder, change the destination path.
+
+**Gemini CLI**
+
+```bash
+mkdir -p ~/.gemini/skills
+
+cp -R create-prd ~/.gemini/skills/
+cp -R generate-tasks ~/.gemini/skills/
+cp -R ui-design-system ~/.gemini/skills/
+```
+
+**Claude Code**
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -139,30 +164,69 @@ cp -R generate-tasks ~/.claude/skills/
 cp -R ui-design-system ~/.claude/skills/
 ```
 
-### Install for one project only
+If you use several coding agents, I prefer keeping one shared copy where possible instead of maintaining multiple copies of the same Skills.
 
-Use this when you want the Skills available only inside one repository instead of across all projects on your computer.
+If you are not sure which folder your agents use, ask the AI to check first.
 
-- **Codex / Gemini CLI:** copy the Skill folders into `.agents/skills/` inside the target project.
-- **Claude Code:** copy the Skill folders into `.claude/skills/` inside the target project.
+Give it this prompt:
 
-### Install an individual Skill
+```text
+I downloaded and unzipped ai-product-workflow here:
 
-The Skills can also be used separately when the required input already exists:
+<PATH_TO_AI_PRODUCT_WORKFLOW>
 
-- **`create-prd`** can be used on its own to create or maintain a PRD.
-- **`ui-design-system`** can be used on its own to initialize, update, preflight, or audit UI rules.
-- **`generate-tasks`** can be used on its own when the project already has a validated `docs/project/PRD.md`.
+It contains three Skills:
+- create-prd
+- generate-tasks
+- ui-design-system
 
-### Skill locations and invocation
+Please inspect my current coding-agent setup and find the supported personal Skills directory for each coding agent I have installed.
 
-| Agent | Personal Skills folder | Project Skills folder | Example invocation |
-| --- | --- | --- | --- |
-| **Codex** | `~/.agents/skills/` | `.agents/skills/` | `$create-prd` |
-| **Gemini CLI** | `~/.agents/skills/` or `~/.gemini/skills/` | `.agents/skills/` or `.gemini/skills/` | Use `/skills list` to confirm discovery |
-| **Claude Code** | `~/.claude/skills/` | `.claude/skills/` | `/create-prd` |
+I would prefer to keep one shared copy under ~/.agents/skills where possible instead of maintaining duplicate copies.
 
-For current host-specific behavior, see the official documentation for [OpenAI Skills](https://developers.openai.com/codex/skills), [Gemini CLI Agent Skills](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/skills.md), and [Claude Code Skills](https://code.claude.com/docs/en/skills).
+If an agent supports ~/.agents/skills, install the three Skills there.
+
+If an agent requires its own Skills directory, use its supported directory instead.
+
+Before changing anything, tell me:
+1. which coding agents you found,
+2. which Skills directory each one uses,
+3. exactly what you plan to install or link.
+
+Then install them.
+
+Do not modify the Skill files themselves.
+```
+
+### 3. Check that the Skills work
+
+Restart or reopen your coding agent if needed, then check whether it can see the Skills.
+
+**Codex**
+
+```text
+$create-prd
+```
+
+**Gemini CLI**
+
+```text
+/skills list
+```
+
+**Claude Code**
+
+```text
+/create-prd
+```
+
+If the Skill appears or starts correctly, the installation is done.
+
+### 4. Delete the downloaded folder
+
+Once the Skills are installed and working, you no longer need the downloaded `ai-product-workflow` folder.
+
+You can simply delete it. The copies inside your Skills folder will stay there.
 
 </details>
 
