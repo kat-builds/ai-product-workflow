@@ -1,44 +1,167 @@
-# AI Product Workflow Skills
+# A More Consistent Way to Build with AI
 
-Three reusable Skills for turning product requirements into a clear PRD, implementation tasks, and UI rules that AI can follow consistently.
+Building a website with a coding agent is great, until the project gets bigger.
 
-I built these Skills to make AI-assisted product work more structured and repeatable. Each Skill has one job, its own supporting rules and templates, and validation where it is useful.
+You ask for one change, and somehow something else changes with it.
 
+Or you already agreed on how something should work, but a few changes later, the agent does it a different way again. Styles start drifting, old decisions get ignored, and eventually you spend more time fixing and redoing things than actually building new ones.
 
-## At a Glance
+That is the part I wanted to fix. I hate it when things stop being consistent, or when AI keeps changing things that were already decided or already working.
 
-| Skill | What it does | Output |
-| --- | --- | --- |
-| [`create-prd`](./create-prd) | Define what to build before implementation starts | `docs/project/PRD.md` |
-| [`generate-tasks`](./generate-tasks) | Turn an approved PRD into traceable tasks, dependencies, verification steps, and copy-ready execution prompts | `docs/project/tasks.md` + `docs/project/task-prompt.md` |
-| [`ui-design-system`](./ui-design-system) | Capture project-specific UI rules so future AI changes can reuse existing patterns consistently | `docs/project/design/DESIGN_SYSTEM.md` |
+So I made these three Skills to help keep the product logic, UI, and implementation consistent as the project grows.
 
-Each Skill keeps a different responsibility clear:
+## `create-prd`
 
-- **PRD** owns product scope and behavior.
-- **Design System** owns recurring UI and interaction rules.
-- **Tasks** turn approved requirements into executable implementation work.
+When you're building with AI, the code doesn't always tell you what the product is supposed to be like. And you probably don't want the AI to scan the whole codebase every time.
 
-## How the Skills Work Together
+That's where a PRD helps. It gives the AI the product context, and it also helps us keep track of those decisions ourselves.
 
-`create-prd` and `generate-tasks` work as a sequence: define the product first, then turn the approved PRD into implementation tasks.
+`create-prd` keeps that context and those decisions in one place. It documents the current scope, existing features, pages, user flows, business rules, interactions, important copy, error states, and any relevant data, auth, payment, or external-service requirements.
 
-`ui-design-system` is separate. It captures the project's recurring UI rules so future AI changes can reuse existing patterns instead of redesigning each screen. It can be used before UI work, during planning, or later to check for design drift.
+Then when a new change starts, the AI has something concrete to work from instead of guessing from the code or the latest chat.
+
+## `ui-design-system`
+
+UI inconsistency drives me crazy.
+
+I'm not a designer. I can tell when something looks wrong, but I don't always know how to make it look better.
+
+For me, good UI mostly means keeping things neat and consistent, and making the same things look and behave the same way.
+
+So I made `ui-design-system`.
+
+It keeps the recurring UI and interaction rules in one place. When I'm working on a task, or something starts to look off, I can ask the AI to follow the Design System instead of explaining the same things again and again: this spacing is too wide, that button should have the same rounded corners as the others, this mobile layout should work like the rest.
+
+The point is not to make everything fancy. I mostly want the UI to stay neat and feel like it belongs to the same product.
+
+## `generate-tasks`
+
+Once we know what to build and what it should look like, the next problem is actually building it.
+
+A good PRD helps, but it does not guarantee the implementation will come out the way you expected. A task can still be too big, done in the wrong order, touch the wrong files, miss a dependency, or look finished without actually being verified.
+
+So I use a proper task document before coding starts.
+
+`generate-tasks` does more than split the PRD into a to-do list. It checks the actual repository, works out dependencies and conflicts, keeps each task small enough to verify, lists the files likely to be involved, and makes verification part of the task instead of something we remember at the end.
+
+It also catches things the AI cannot do by itself — like a login, approval, secret, or real-service setup — so those do not suddenly block the work halfway through.
+
+Then it creates `task-prompt.md`, which is the version I actually use day to day.
+
+It works more like a to-do list: I can see what is already done, what is still open, what depends on something else, and where tasks may conflict.
+
+When I am ready to continue, I can just copy the next prompt and give it to the AI.
+
+So most of the time, I only need this file. `tasks.md` keeps the full implementation plan in the background.
+
+## How I Use Them Together
+
+For most changes, I start with the PRD.
+
+If the change involves UI, I check the Design System before creating the tasks. That way the UI rules are already clear before the implementation plan is written.
+
+If there is no UI work, I can skip that step and go straight from the PRD to the tasks.
+
+Then I use `task-prompt.md` to actually work through the tasks with AI.
 
 ```mermaid
-flowchart LR
-    A[Product requirements] --> B[$create-prd]
-    B --> C[PRD]
-    C --> D[$generate-tasks]
-    D --> E[Implementation tasks]
+flowchart TD
+    A[New idea or change] --> B[create-prd]
+    B --> C[PRD.md]
 
-    F[$ui-design-system] --> G[Design System]
-    G -. UI rules .-> D
+    C --> D{UI involved?}
+
+    D -- Yes --> E[ui-design-system]
+    E --> F[DESIGN_SYSTEM.md]
+    F --> G[generate-tasks]
+
+    D -- No --> G
+
+    G --> H[tasks.md]
+    H --> I[task-prompt.md]
+    I --> J[Build with AI]
 ```
+
+It is not a strict process where every Skill has to run every time.
+
+The PRD is the product source of truth. The Design System is there when the work touches UI. `tasks.md` holds the full implementation plan, and `task-prompt.md` is the shorter list I actually use while building.
+
+If a new UI pattern turns out to be worth reusing, I can update the Design System again later. I do not use it as a last-minute "make everything pretty" pass.
+
+## What Gets Added to the Project
+
+These Skills do not need a special code structure.
+
+They mainly work with a few files under `docs/project/`:
+
+```text
+docs/
+└── project/
+    ├── PRD.md
+    ├── design/
+    │   └── DESIGN_SYSTEM.md
+    ├── tasks.md
+    └── task-prompt.md
+```
+
+- `PRD.md` keeps the product scope, behavior, rules, and decisions.
+- `DESIGN_SYSTEM.md` keeps the recurring UI and interaction rules.
+- `tasks.md` keeps the full implementation plan.
+- `task-prompt.md` is the working to-do/done list I use with AI.
+
+Your project can have any other docs or code structure around these. The Skills do not require a specific framework, folder structure, or tech stack.
+
+## Quick Start
+
+Once the Skills are available to your AI coding tool, I usually use them like this.
+
+Use your tool's normal Skill invocation syntax.
+
+### Start or update the PRD
+
+**Skill:** `create-prd`
+
+```text
+I want to add...
+Please check the current project and update the PRD first.
+```
+
+### Check the UI rules when the change involves UI
+
+**Skill:** `ui-design-system`
+
+```text
+Check this change against the current Design System and update it if needed.
+```
+
+If the project does not have a Design System yet, the Skill can initialize one from the current UI patterns and shared components.
+
+### Create the implementation plan
+
+**Skill:** `generate-tasks`
+
+```text
+Create the tasks from the current PRD.
+```
+
+After that, I normally work from `task-prompt.md` and copy the next prompt when I am ready to continue.
+
+## A Short Example
+
+Say I want to add a user credit balance with automatic recharge.
+
+I would use the Skills like this:
+
+1. `create-prd` defines how the balance, threshold, opt-in, payment rules, error states, and scope should work.
+2. Because the feature has UI, `ui-design-system` checks the balance indicator and settings UI against the project's existing patterns.
+3. `generate-tasks` turns the approved PRD, repository facts, and relevant UI rules into implementation tasks with dependencies, conflicts, files, and verification.
+4. `task-prompt.md` becomes the working list I use to see what is done and copy the next prompt.
+
+The exact implementation can change from project to project. The point is that the product decisions, UI rules, and execution plan are not all being reinvented in the same chat.
 
 ## Installation
 
-For the full workflow, install all three Skills. The details are hidden by default so the rest of the README stays easy to scan.
+For the full workflow, install all three Skills and use the ones you need for each change.
 
 <details>
 <summary><strong>👉 Show installation steps</strong></summary>
@@ -47,7 +170,7 @@ For the full workflow, install all three Skills. The details are hidden by defau
 
 The repository can be downloaded anywhere on your computer. This is only the source folder you copy the Skills from — it is not the final Skills location.
 
-For example, download it into your Downloads folder:
+For example:
 
 ```bash
 cd ~/Downloads
@@ -57,21 +180,7 @@ cd ai-product-workflow
 
 You can replace `~/Downloads` with any folder you prefer.
 
-### Install all three Skills — recommended
-
-The three Skills are designed to work together:
-
-```text
-create-prd
-    ↓
-PRD
-    ↓
-generate-tasks
-
-ui-design-system
-    ↓
-UI rules that guide implementation
-```
+### Install all three Skills
 
 #### Codex or Gemini CLI
 
@@ -108,12 +217,12 @@ Use this when you want the Skills available only inside one repository instead o
 - **Codex / Gemini CLI:** copy the Skill folders into `.agents/skills/` inside the target project.
 - **Claude Code:** copy the Skill folders into `.claude/skills/` inside the target project.
 
-### Install an individual Skill — optional
+### Install an individual Skill
 
-The full three-Skill setup is recommended, but the Skills can also be used separately when the required input already exists:
+The Skills can also be used separately when the required input already exists:
 
 - **`create-prd`** can be used on its own to create or maintain a PRD.
-- **`ui-design-system`** can be used on its own to establish or audit UI rules.
+- **`ui-design-system`** can be used on its own to initialize, update, preflight, or audit UI rules.
 - **`generate-tasks`** can be used on its own when the project already has a validated `docs/project/PRD.md`.
 
 ### Skill locations and invocation
@@ -128,290 +237,9 @@ For current host-specific behavior, see the official documentation for [OpenAI S
 
 </details>
 
-## Quick Start
+## What's Inside This Repo
 
-The examples below show the Skill name and the instruction to give it. Use your coding agent's normal Skill invocation syntax.
-
-### Define or update product requirements
-
-**Skill:** `create-prd`
-
-```text
-Create or update the PRD from the requirements and current repository.
-```
-
-### Create or review UI rules
-
-**Skill:** `ui-design-system`
-
-```text
-Initialize the project's Design System from its current UI patterns and shared components.
-```
-
-### Generate implementation tasks
-
-**Skill:** `generate-tasks`
-
-```text
-Generate implementation tasks from the current PRD.
-```
-
-## Worked Example
-
-The same workflow can be used for a new website, a larger product change, or one feature inside an existing product.
-
-This walkthrough uses one feature inside an existing web app because it keeps the example small enough to follow while still showing the handoff between product requirements, UI rules, task planning, status, and execution prompts.
-
-**Scenario:** add a user credit balance with automatic Stripe recharge when the balance drops below a chosen threshold.
-
-For this example, the Design System Skill is used before task generation because the feature includes new UI.
-
-### Step 1 — Define the product with `create-prd`
-
-**Skill:** `create-prd`
-
-**Example prompt**
-
-```text
-Add user credit balance with automatic Stripe recharge when balance drops below threshold.
-```
-
-**What this Skill does here**
-
-It checks the current repository, resolves important product decisions, keeps non-goals explicit, and writes the approved scope to `docs/project/PRD.md` with stable requirement IDs.
-
-**What you get**
-
-- clear goals and non-goals
-- stable `FR-*` and `NFR-*` requirement IDs
-- explicit product decisions
-- a validated PRD ready for planning
-
-<details>
-<summary><strong>👉 See what the generated PRD looks like</strong></summary>
-
-```markdown
-# Product Requirements Document: Credit Balance & Auto-Recharge
-
-## Status & Boundaries
-
-- Status: VALIDATED
-- Target Path: `docs/project/PRD.md`
-
-## Problem & Goals
-
-- Provide users with uninterrupted access by auto-topping up credits when low.
-- Prevent unapproved recurring charges by requiring explicit user opt-in.
-
-## Non-Goals
-
-- Manual bank transfer or invoice payments.
-- Real-time balance streaming over WebSocket (dashboard polling is sufficient).
-
-## Functional Requirements
-
-- **FR-01 (Balance Display):** User dashboard shows remaining credits and current recharge threshold.
-- **FR-02 (Opt-in Auto-Recharge):** User can enable auto-recharge, choosing threshold (default: 10 credits) and pack size (default: 100 credits for $10).
-- **FR-03 (Payment Webhook Trigger):** When balance drops below threshold during an API call, trigger background recharge via Stripe off-session payment.
-
-## Non-Functional Requirements
-
-- **NFR-01 (Idempotency):** Stripe payment intents must pass idempotent request keys derived from user ID and billing epoch.
-```
-
-</details>
-
-### Step 2 — Capture UI rules with `ui-design-system`
-
-**Skill:** `ui-design-system`
-
-**Example prompt**
-
-```text
-Update the Design System for the credit status badge and auto-recharge settings.
-```
-
-**What this Skill does here**
-
-It uses the approved product requirements as context, then updates the project's reusable UI rules without redefining product behavior.
-
-**What you get**
-
-- reusable visual and interaction rules
-- shared component patterns
-- responsive behavior
-- a project-level reference future AI changes can follow
-
-<details>
-<summary><strong>👉 See what the generated Design System looks like</strong></summary>
-
-```markdown
-# UI Design System: Billing & Balance Primitives
-
-## Semantic Color Tokens
-
-- `--status-credit-normal`: `hsl(var(--primary))`
-- `--status-credit-warning`: `hsl(38 92% 50%)` (Active when balance < threshold)
-- `--status-credit-empty`: `hsl(0 84% 60%)` (Active when balance == 0)
-
-## Canonical Component Patterns
-
-### Credit Status Indicator
-
-- Role: Compact dashboard badge displaying current balance and health status.
-- Warning State: Uses `--status-credit-warning` background with alert icon; tooltip displays auto-recharge status.
-- Class convention: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium`
-
-### Auto-Recharge Settings Modal
-
-- Role: Financial authorization dialog.
-- Rules: Requires explicit checkbox confirmation before enabling; primary CTA must clearly state charge amount (for example, "Save & Authorize $10.00").
-- Responsive: Bottom sheet on mobile (< 640px); centered modal with backdrop blur on desktop.
-```
-
-</details>
-
-### Step 3 — Plan and execute with `generate-tasks`
-
-**Skill:** `generate-tasks`
-
-**Example prompt**
-
-```text
-Generate implementation tasks for Credit Balance & Auto-Recharge from the validated PRD.
-```
-
-**What this Skill does here**
-
-It uses the approved PRD as the source of scope, checks the Design System for relevant UI constraints, and breaks the feature into traceable tasks with dependencies and verification.
-
-It produces two files with different jobs:
-
-- **`tasks.md`** — the complete task plan and source of truth.
-- **`task-prompt.md`** — the simpler execution view: what is done, what is next, and the exact prompt to copy to your coding agent.
-
-#### Task status
-
-`tasks.md` tracks each parent task through:
-
-```text
-⬜ Pending → 🔵 In progress → 🟡 Ready for review → ✅ Approved
-
-⛔ Blocked
-```
-
-`task-prompt.md` keeps completed task IDs visible, shows unfinished work in recommended execution order, and marks the current critical-path task with `❗`.
-
-<details>
-<summary><strong>👉 See what the generated task plan looks like</strong></summary>
-
-```markdown
-# Implementation Tasks: Credit Balance & Auto-Recharge
-
-## Dependency Graph & Execution Order
-
-- Task 1.0 (Database schema for balance & recharge preferences) [Root]
-  ├── Task 2.0 (Stripe off-session recharge service & webhook handler) [Depends on: 1.0]
-  └── Task 3.0 (Frontend balance badge & recharge settings modal) [Depends on: 1.0]
-      └── Task 4.0 (End-to-end billing integration test) [Depends on: 2.0, 3.0]
-
-## Task Packages
-
-### [x] 1.0 Add credit balance schema and recharge preferences
-
-- **Status:** `✅ Approved`
-- **Source:** `FR-01`, `FR-02`
-- **AI Verification:** schema checks and focused database tests passed
-
-### [ ] 2.0 Connect Stripe recharge and webhook handling
-
-- **Status:** `⬜ Pending`
-- **Source:** `FR-02`, `FR-03`
-- **Depends on:** `1.0`
-- **Real integration:** Pending
-- **AI Verification:** Stripe test-mode flow + webhook verification
-
-### [ ] 3.0 Add balance and auto-recharge UI
-
-- **Status:** `⬜ Pending`
-- **Source:** `FR-01`, `FR-02`
-- **Depends on:** `1.0`
-- **Design System constraint:** reuse the approved balance indicator and recharge settings patterns
-- **AI Verification:** typecheck + focused UI state verification
-```
-
-</details>
-
-At this point, `task-prompt.md` gives the user a much smaller working view:
-
-```text
-Completed
-1.0
-
-Remaining
-❗2.0, 3.0
-```
-
-The `❗` marks the current critical-path task.
-
-<details>
-<summary><strong>👉 See what the execution prompts look like</strong></summary>
-
-````markdown
-# Credit Balance & Auto-Recharge — Task Execution Prompts
-
-## Completed
-
-1.0
-
-## Remaining
-
-❗2.0, 3.0
-
-## Task 2.0 — Connect Stripe recharge and webhook handling
-
-- Depends on: 1.0
-- Conflicts with: 3.0
-
-- Now: The project can store credit balances and recharge settings, but it cannot charge or update a balance through Stripe yet.
-- This task: The coding agent will connect the recharge service and webhook flow using Stripe test mode.
-- After: A successful test payment can update the user's balance through the real integration path.
-
-**Prompt to send to your coding agent**
-
-```text
-Execute Task 2.0 from docs/project/tasks.md. Read the complete task first and inspect the current implementation. Complete the implementation and verification exactly within the task scope. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit beginning with 2.0.
-```
-
-## Task 3.0 — Add balance and auto-recharge UI
-
-- Depends on: 1.0
-- Conflicts with: 2.0
-
-- Now: Users cannot see their balance or manage auto-recharge.
-- This task: The coding agent will add the balance status and recharge settings UI using the project Design System.
-- After: Users can see their current balance and configure auto-recharge from the dashboard.
-
-**Prompt to send to your coding agent**
-
-```text
-Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and inspect the current implementation. Complete the implementation and verification exactly within the task scope. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit beginning with 3.0.
-```
-````
-
-</details>
-
-## Design Principles
-
-- Define product scope before planning implementation.
-- Keep current work separate from existing behavior and future ideas.
-- Trace implementation tasks back to PRD requirements.
-- Check the current repository instead of guessing how the project works.
-- Plan verification before implementation starts.
-- Do not add infrastructure or product scope just because a project template supports it.
-- Keep product behavior in the PRD and recurring UI rules in the Design System.
-
-## Repository Structure
+Each top-level directory is one Skill:
 
 ```text
 .
@@ -419,12 +247,14 @@ Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and in
 │   ├── SKILL.md
 │   ├── agents/
 │   ├── assets/
+│   ├── locales/
 │   ├── references/
 │   └── scripts/
 ├── generate-tasks/
 │   ├── SKILL.md
 │   ├── agents/
 │   ├── assets/
+│   ├── locales/
 │   ├── references/
 │   ├── scripts/
 │   └── tests/
@@ -432,6 +262,7 @@ Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and in
 │   ├── SKILL.md
 │   ├── agents/
 │   ├── assets/
+│   ├── locales/
 │   ├── references/
 │   └── scripts/
 ├── AGENTS.md
@@ -439,8 +270,7 @@ Execute Task 3.0 from docs/project/tasks.md. Read the complete task first and in
 └── README.md
 ```
 
-Each Skill uses the same basic structure. `SKILL.md` contains the main workflow, with supporting templates, references, validators, tests, and agent metadata where needed.
-
+`SKILL.md` contains the main workflow. The other folders hold templates, detailed rules, locale mappings, validators, tests, and agent metadata where needed.
 
 ## License
 
