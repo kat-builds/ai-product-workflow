@@ -4,7 +4,7 @@ Read this file when defining parent acceptance, `T-*`, `G-*`, or real integratio
 
 ## Match verification to blast radius
 
-Use the smallest verification set that gives meaningful confidence for the planned change. Applicable `AGENTS.md` rules override generic defaults.
+Use the smallest verification set that gives meaningful confidence for the planned change. Applicable project/agent instructions override generic defaults.
 
 Typical objective checks include:
 
@@ -33,7 +33,7 @@ For UI/copy/layout work, normally plan:
 - `git diff --check` when applicable
 - manual verification of the affected screens/interactions when project rules require it
 
-When manual UI verification is required and remains part of acceptance after objective checks, use `验收方式：AI 验证后人工复查` and a focused `G-*` gate containing only the user's remaining checks.
+When manual UI verification is required and remains part of acceptance after objective checks, use `Acceptance: AI verification then human review` and a focused `G-*` gate containing only the user's remaining checks.
 
 Only plan E2E when at least one is true:
 
@@ -89,7 +89,7 @@ Login, CAPTCHA, 2FA, secret/environment configuration, account permission, test 
 
 ## Real integration
 
-Use the existing `真实联调` enum from the template/validator:
+Use the existing `Real Integration` enum from the template/validator:
 
 - `Not required`
 - `Pending`

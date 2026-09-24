@@ -1,4 +1,4 @@
 interface:
   display_name: "generate-tasks"
-  short_description: "生成任务定义、验证计划与按实际执行顺序排列的 Prompt"
-  default_prompt: "使用 $generate-tasks 根据当前 PRD 和仓库事实更新 docs/project/tasks.md，并同步生成按推荐执行顺序排列的 docs/project/task-prompt.md。"
+  short_description: "Generate task definitions, verification plans, and prompts in real execution order"
+  default_prompt: "Use $generate-tasks to update docs/project/tasks.md from the current PRD and repository facts, then regenerate docs/project/task-prompt.md in the recommended execution order."

@@ -57,7 +57,7 @@ Never ask the user to paste secrets into task documents or chat when a platform 
 
 Reusable platform instructions may live under:
 
-`$generate-tasks/references/user-actions/<name>.md`
+`references/user-actions/<name>.md`
 
 After task generation/update, inventory only the User Actions/Decisions/Approvals introduced or changed in this run:
 

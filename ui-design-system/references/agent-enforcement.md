@@ -1,14 +1,14 @@
-# AGENTS.md enforcement
+# Project-agent instruction enforcement
 
-The Design System becomes reliably reusable only when project operating instructions make AI read it before relevant UI work.
+The Design System becomes reliably reusable only when the applicable project/agent operating instructions make AI read it before relevant UI work.
 
 ## Install principle
 
-Keep the `AGENTS.md` block short.
+Keep the enforcement block short.
 
-Do not paste the entire Design System into `AGENTS.md`. That creates duplication and future contradictions.
+Do not paste the entire Design System into the project/agent instruction file. That creates duplication and future contradictions.
 
-`AGENTS.md` should:
+The applicable instruction file should:
 - point to the canonical Design System path;
 - define when it must be read;
 - state its authority over recurring visual/UI-system decisions;
@@ -16,7 +16,7 @@ Do not paste the entire Design System into `AGENTS.md`. That creates duplication
 - require deliberate resolution when a task conflicts with the Design System;
 - require a final consistency check.
 
-Use `assets/AGENTS.design-system-snippet.md` as the base.
+Use `assets/AGENTS.design-system-snippet.md` as the agent-neutral content base; its filename does not require the target project to use `AGENTS.md`.
 
 ## Scope the trigger
 
@@ -39,7 +39,7 @@ The recommended project contract is:
 
 - PRD owns product behavior and scope.
 - Design System owns recurring visual and interaction-system rules.
-- AGENTS.md owns the workflow requirement to consult those documents.
+- the applicable project/agent instruction file owns the workflow requirement to consult those documents.
 - Latest explicit user instruction may change either source of truth, but the relevant document should be updated deliberately rather than silently diverging.
 
 ## Conflict handling
@@ -55,11 +55,11 @@ When implementation requirements conflict with the Design System:
 ## Existing repositories
 
 When installing enforcement into a mature project:
-- locate the nearest applicable `AGENTS.md`;
+- locate the applicable project/agent instruction file used by the current coding agent;
 - preserve unrelated instructions;
 - avoid duplicating an existing UI/design section;
 - adapt the canonical Design System path;
-- do not add implementation-specific style values to AGENTS.md.
+- do not add implementation-specific style values to the instruction file.
 
 ## New repositories
 

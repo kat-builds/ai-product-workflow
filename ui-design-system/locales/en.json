@@ -1,0 +1,18 @@
+{
+  "code": "en",
+  "strings": {
+    "section.1": "Authority & Scope",
+    "section.2": "Design Profile",
+    "section.3": "Foundations",
+    "section.4": "Layout & Responsive System",
+    "section.5": "Component Patterns",
+    "section.6": "Interaction Rules",
+    "section.7": "UI Copy & Labeling",
+    "section.8": "Reuse & Component Ownership",
+    "section.9": "Accessibility & Input Modality",
+    "section.10": "Do / Don't",
+    "section.11": "Documented Exceptions",
+    "section.12": "Governance",
+    "section.13": "Design Audit Checklist"
+  }
+}

@@ -58,12 +58,12 @@ Mark two unfinished parent tasks as conflicting when concurrent implementation w
 - shared config, env, or deployment files
 - shared types, interfaces, API contracts, registries, or generated clients
 - routes, layouts, navigation, middleware, or global styles
-- shared i18n namespaces/messages
+- shared localization/content namespaces or messages
 - shared core modules or cross-cutting utilities
 
 Being in the same directory is not enough.
 
-The `冲突` snapshot in `task-prompt.md`:
+The `Conflicts` snapshot in `task-prompt.md`:
 
 - contains only current unfinished parent Task IDs
 - never contains the task itself
@@ -98,11 +98,11 @@ Generating a Multi-Agent plan does not itself launch Workers, Subagents, branche
 The exact structure comes from `assets/task-prompt-template.md` and the validator. Semantically:
 
 - the title uses the confirmed user-facing project name; if absent, use a verified primary domain; do not guess from package or directory names
-- `## 已完成` contains only Approved parent IDs in real completion order
-- `## 未完成` contains every unfinished parent in the same order as the Task sections
+- `## Completed` contains only Approved parent IDs in real completion order
+- `## Unfinished` contains every unfinished parent in the same order as the Task sections
 - mark the current critical-path item(s) with the required `❗` notation from the template/validator
 - each unfinished Task shows concise dependency and current conflict IDs
-- each Task explanation uses concrete product language and explains `现在：`, `这次：`, and `完成后：`
+- each Task explanation uses concrete product language and explains `Now`, `This task`, and `After`
 - explanations must not expose internal task/test/gate IDs, file paths, or vague engineering filler to the user
 - each Single-Agent execution Prompt should stay short and point back to the canonical parent rather than restating its full contract
 

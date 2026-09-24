@@ -1,6 +1,6 @@
 # Create PRD — Core Rules
 
-Use these rules for every `$create-prd` run.
+Use these rules for every `create-prd` run.
 
 ## Output boundary
 
@@ -21,7 +21,7 @@ Use this order for product decisions:
 4. verified repository fact
 5. design, playbook, module, template, or other reference material
 
-`AGENTS.md` and project playbooks are process constraints, not product-scope sources.
+Applicable project/agent instructions and project playbooks are process constraints, not product-scope sources.
 
 A repository capability, route, provider, dependency, template feature, design, or reference document may prove an `Existing Baseline`, feasibility constraint, or reuse option. Its existence never makes it `Current Scope` by itself.
 
@@ -53,14 +53,16 @@ Do not promote `Existing Baseline`, `Confirmed Next Phase`, `Possible Later`, te
 
 Inspect only what is needed to verify the requested scope, current behavior, terminology, routes, configuration shape, and reusable capabilities.
 
+Derive framework, package manager, localization approach, responsive conventions, providers, and deployment tooling from the current project. Do not carry those assumptions over from a template, another repository, or this Skill.
+
 Do not bulk-load unrelated project references and then infer scope from whatever exists in the repository.
 
 Check a path exists before citing it. If a reference document is missing, use verified repository facts instead. Missing documentation is a blocker only when the missing fact itself prevents a reliable product decision.
 
 ## PRD content discipline
 
-- Default PRD language is Chinese unless project instructions say otherwise.
-- User-facing site copy remains in the product's configured language and i18n system.
+- Keep Skill source documentation in English. For generated PRDs, use the language priority defined in `SKILL.md`; preserve an existing PRD language during incremental updates unless explicitly changed.
+- User-facing product copy follows the product's configured language and localization/content system, if one exists. Do not assume English, i18n, or any specific localization library.
 - Preserve user-customized labels, placeholders, pricing copy, and UI copy unless the requested requirement changes them.
 - Include environment-variable names and purposes only; never include secret values, credentials, tokens, private URLs, or connection strings.
 - Use `assets/prd-template.md` as the structural template and remove instructions, examples, placeholders, and untriggered conditional subsections from the finished PRD.

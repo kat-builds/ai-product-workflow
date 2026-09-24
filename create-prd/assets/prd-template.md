@@ -1,237 +1,238 @@
-# <产品或功能名称> 产品需求文档（PRD）
+# <Product or Feature Name> Product Requirements Document (PRD)
 
-> 文档角色说明：本文件定义产品的当前范围、功能逻辑、交互流程、业务规则、页面结构与验收标准；视觉落地遵循当前工程的 design token、组件体系与 i18n 规范。
+> Document role: This file defines current product scope, functional logic, interaction flows, business rules, page/entry structure, and acceptance outcomes. Visual implementation follows the project's confirmed Design System, shared components, and UI conventions when applicable.
 
-> 语言说明：本文档使用中文；面向用户的站点文案默认使用英文并通过 i18n 资源读取，代码命名、路由、字段名和内部术语使用英文。
+> Language: Use the language selected by the applicable project instructions or the user's current request. User-facing copy follows the product's actual language and localization/content system; do not assume English, i18n, or a specific framework.
 
 - Last updated: YYYY-MM-DD
+- Document language: en
 - Status: Draft / Confirmed / Partially Blocked
-- Product decision priority: 最新用户确认 > 未被覆盖的已确认上游规格 > 仍有效的既有 PRD 决策 > 当前仓库事实 > 设计、playbook 与模板参考
-- Output boundary: 本文档只定义产品需求；不得包含 tasks、实现步骤、命令、迁移、部署或 commit 指令
+- Product decision priority: latest explicit user decision > confirmed upstream requirement not overridden > existing PRD decision still in force > verified repository fact > design/playbook/template reference
+- Output boundary: this document defines product requirements only; do not include implementation tasks, commands, migrations, deployment steps, or commit instructions
 
 ## 1. Introduction & Goals
 
-### 产品概述
+### Product Overview
 
-<产品是什么，以及本次 PRD 覆盖什么。>
+<What the product is and what this PRD covers.>
 
-### 用户问题与目标用户
+### User Problem & Target User
 
-- 用户问题：<具体问题>
-- 目标用户：<具体人群>
-- 核心价值：<可观察价值>
+- User problem: <specific problem>
+- Target user: <specific audience>
+- Core value: <observable value>
 
-### 当前目标与成功标准
+### Current Goals & Success Criteria
 
-- `NFR-001` — <可衡量目标或验收结果>
+- `NFR-001` — <measurable goal or acceptance outcome>
 
-### 已采用假设
+### Adopted Assumptions
 
-- <仅记录不会改变核心范围的 P1 假设；没有时写“无”。>
+- <Only record non-blocking assumptions that matter. Write "None" when there are none.>
 
 ## 2. Domain, Audience & SEO
 
-- Domain：<域名或 TBD>
-- Target region：<地区>
-- Site language：<语言>
-- Primary audience：<受众>
-- SEO handling：<当前相关策略；不相关时简述原因>
+- Domain: <domain or TBD>
+- Target region: <region>
+- Site language: <language>
+- Primary audience: <audience>
+- SEO handling: <current relevant strategy; if not applicable, say why briefly>
 
 ## 3. Project Type & Scope
 
 ### Project Type
 
-- 类型：<Simple frontend tool / Content site / API tool / AI tool / Account product / Paid product>
-- PRD 展开深度：<为什么需要或不需要专项章节>
+- Type: <Simple frontend tool / Content site / API tool / AI tool / Account product / Paid product>
+- PRD depth: <why specialist sections are or are not needed>
 
 ### Current Scope
 
-- `FR-001` — <本次明确实现或改造的能力；详细定义见对应正式需求>
+- `FR-001` — <capability being implemented or changed now; define it formally below>
 
 ### Existing Baseline
 
-- `PAGE-001` — <已有能力及 Reuse / Preserve / Hide / Redirect / Noindex / Do not touch / Delete 处理>
+- `PAGE-001` — <existing capability and its Reuse / Preserve / Hide / Redirect / Noindex / Do not touch / Delete handling>
 
 ### Confirmed Next Phase
 
-- <已明确承诺的下一阶段及未来影响；没有时写“无”。不得据此创建当前需求或激活当前基础设施。>
+- <Explicitly committed later work and any future impact. Write "None" when absent. Do not create current requirements or activate infrastructure from this section.>
 
 ### Possible Later
 
-- <尚未承诺的未来事项；没有时写“无”。>
+- <Possible future work that is not committed. Write "None" when absent.>
 
 ### Explicitly Overridden
 
-- <被最新用户决定覆盖的旧规格及新结论；没有时写“无”。>
+- <Earlier requirement superseded by the latest decision and the replacement decision. Write "None" when absent.>
 
 ### Infrastructure Decisions
 
 | Capability | Decision | Scope basis | Notes |
 |---|---|---|---|
-| Database | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID 或 No Current Scope trigger> | <说明> |
-| Auth | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID 或 No Current Scope trigger> | <说明> |
-| Storage | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID 或 No Current Scope trigger> | <说明> |
-| Payment | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID 或 No Current Scope trigger> | <说明> |
-| Analytics | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID 或 No Current Scope trigger> | <说明> |
+| Database | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID or No Current Scope trigger> | <notes> |
+| Auth | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID or No Current Scope trigger> | <notes> |
+| Storage | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID or No Current Scope trigger> | <notes> |
+| Payment | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID or No Current Scope trigger> | <notes> |
+| Analytics | <Reuse / Configure / Extend / Defer / Not required / Blocked> | <Current Scope ID or No Current Scope trigger> | <notes> |
 
-仅 `Reuse / Configure / Extend` 表示当前激活；它们的 Scope basis 必须列出 Current Scope ID。参考文档、模板能力、Existing Baseline、Confirmed Next Phase 或 Possible Later 不能单独作为当前激活依据。
+Only `Reuse / Configure / Extend` activates a capability for Current Scope, and its Scope basis must cite Current Scope IDs. Reference docs, templates, Existing Baseline, Confirmed Next Phase, or Possible Later do not activate current infrastructure by themselves.
 
 ## 4. User Scenarios
 
-### 场景 1：<名称>
+### Scenario 1: <Name>
 
-- 用户：<角色>
-- 触发：<何时进入>
-- 目标：<希望完成什么>
-- 预期结果：<用户能观察到的结果>
+- User: <role>
+- Trigger: <when this starts>
+- Goal: <what the user wants to achieve>
+- Expected result: <observable outcome>
 
 ## 5. Page Structure
 
-### `PAGE-001` — <页面或入口名称>
+### `PAGE-001` — <Page or Entry Name>
 
-- Route：`/example`
-- Page role：<页面职责>
-- Handling：New / Reuse / Adapt / Hide / Preserve / Do not touch / Redirect / Noindex / Delete
-- Section order：<区块顺序>
-- Key states：initial / empty / loading / error / success
-- Primary CTA：<实际用户文案或 COPY ID>
-- Navigation / footer handling：<明确处理>
+- Route: `/example`
+- Page role: <responsibility>
+- Handling: New / Reuse / Adapt / Hide / Preserve / Do not touch / Redirect / Noindex / Delete
+- Section order: <order>
+- Key states: initial / empty / loading / error / success
+- Primary CTA: <actual user-facing copy or COPY ID>
+- Navigation / footer handling: <explicit decision>
 
 ## 6. Interaction Flows
 
-### `FLOW-001` — <完整流程名称>
+### `FLOW-001` — <Complete Flow Name>
 
-1. 用户从 <入口> 进入。
-2. 用户执行 <操作>。
-3. 系统显示 <即时反馈>。
-4. 成功时显示 <结果>，并允许 <下一步>。
-5. 失败时进入 `ERR-001`，用户可以 <恢复或重试>。
+1. The user enters from <entry>.
+2. The user performs <action>.
+3. The system shows <immediate feedback>.
+4. On success, the system shows <result> and allows <next step>.
+5. On failure, enter `ERR-001` and allow the user to <recover or retry>.
 
 ## 7. Functional Requirements
 
-### `FR-001` — <单一、可判断的需求标题>
+### `FR-001` — <Single Testable Requirement Title>
 
-- Trigger：<用户动作或条件>
-- System behavior：<系统行为和业务规则>
-- User-visible result：<用户能看到什么>
-- Boundaries：<不做什么或限制>
-- Acceptance criteria：<可直接验证的结果>
+- Trigger: <user action or condition>
+- System behavior: <behavior and business rules>
+- User-visible result: <what the user sees>
+- Boundaries: <what is excluded or limited>
+- Acceptance criteria: <directly testable outcome>
 
 ## 8. API, Data, Auth, Storage & Payment
 
-最终 PRD 仅保留 Current Scope 实际触发的子节并删除其余示例。简单项目直接说明所有专项能力均为 `Not required`，不得保留未触发的 ID 或占位子节。
+Keep only the subsections actually triggered by Current Scope. For simple projects, state that specialist capabilities are `Not required` instead of retaining unused placeholders.
 
-### API / Provider（按需）
+### API / Provider (when applicable)
 
-- `API-001` — <用途、输入、输出、失败/超时/限流、服务端边界、变量名>
+- `API-001` — <purpose, input, output, failure/timeout/limit behavior, server boundary, variable names>
 
-### Data / Auth / Storage（按需）
+### Data / Auth / Storage (when applicable)
 
-- `DATA-001` — <账号、权限、保存内容、owner、生命周期、刷新恢复、删除和失败处理>
+- `DATA-001` — <accounts, permissions, stored data, owner, lifecycle, refresh/recovery, deletion, and failure handling>
 
-### Payment / Entitlement（按需）
+### Payment / Entitlement (when applicable)
 
-- `PAY-001` — <模式、产品映射、checkout 回跳、webhook、幂等、权益、补偿和变量名>
+- `PAY-001` — <mode, product mapping, checkout return, webhook authority, idempotency, entitlement, and recovery>
 
-### Analytics（按需）
+### Analytics (when applicable)
 
-- Event：`<event_name>`
-- Trigger：<触发条件>
-- Properties：<必要且非敏感属性>
-- Privacy boundary：<不采集什么>
-- Success metric：<如何衡量>
+- Event: `<event_name>`
+- Trigger: <condition>
+- Properties: <necessary non-sensitive properties>
+- Privacy boundary: <what is not collected>
+- Success metric: <how success is measured>
 
 ## 9. Mobile & Responsive
 
 ### Breakpoints
 
-覆盖：`320 / 375 / 390 / 412 / 768 / 1024`。
+<Use the project's existing breakpoints / viewport policy. If none exists, record only representative viewports the product actually needs to support and verify. For non-UI products, write "Not applicable — <reason>".>
 
 ### Rules
 
-- 页面级不得横向滚动。
-- 宽表格、图表、代码块、tabs 或列表只在组件内部滚动。
-- 输入区域可收缩，关键按钮、单位和操作不得被挤出。
-- 窄屏导航和工具栏使用明确的折行、堆叠或横滑策略。
+- No page-level horizontal scrolling.
+- Wide tables, charts, code blocks, tabs, or lists scroll only inside their owning component when needed.
+- Input areas may shrink, but key buttons, units, and actions must remain operable.
+- Narrow-screen navigation and toolbars use an explicit wrap, stack, or horizontal-scroll strategy.
 
 ### Mobile acceptance criteria
 
-1. `320px` 下可以完成 `FLOW-001` 的核心路径，无页面级横向滚动。
-2. `375px` 下主要输入、CTA 和结果不会重叠、截断或移出视口。
-3. `390px` 下长标题、错误文案和用户输入可以换行且不遮挡操作。
-4. `412px` 下宽内容仅在所属组件内部滚动。
-5. `768px` 与 `1024px` 下页面从移动布局过渡后，区块顺序和关键操作保持一致。
+1. <At the narrowest representative supported viewport, the core flow remains usable with no page-level horizontal scrolling.>
+2. <At a representative phone viewport, primary inputs, CTA, states, and results do not overlap, clip, or move out of the operable area.>
+3. <At a representative medium/tablet viewport, the transformed layout keeps the correct section order, information hierarchy, and key actions.>
+
+For non-UI products, write: `Not applicable — <reason>`.
 
 ## 10. Error States, Security & Privacy
 
 ### Error States
 
-#### `ERR-001` — <错误名称>
+#### `ERR-001` — <Error Name>
 
-- Trigger：<错误条件>
-- User message：<实际英文站点文案或 COPY ID>
-- System behavior：<系统如何处理>
-- Retry：<是否和如何重试>
-- Next step：<用户下一步>
+- Trigger: <error condition>
+- User message: <user-facing copy in the product's actual language, or COPY ID>
+- System behavior: <system handling>
+- Retry: <whether/how to retry>
+- Next step: <what the user can do next>
 
 ### Security & Privacy
 
-- Data storage：<保存什么或不保存>
-- Third-party transfer：<发送什么或不发送>
-- Logging：不得记录用户输入全文、结果全文、凭据或敏感个人信息。
-- Secrets：仅记录环境变量名和用途，值只能位于服务端 secret 配置。
-- Legal update：<Privacy / Terms / Cookie / disclosure 是否需要更新及原因>
+- Data storage: <what is or is not stored>
+- Third-party transfer: <what is or is not sent>
+- Logging: do not log full user inputs/results, credentials, or sensitive personal data.
+- Secrets: record environment-variable names and purposes only; values belong in server-side secret storage.
+- Legal update: <whether Privacy / Terms / Cookie / disclosure updates are required and why>
 
-## 11. UI Copy & i18n
+## 11. UI Copy & Localization
 
-| ID | Context | English copy | Namespace / Key | Decision |
+| ID | Context | User-facing copy | Localization / key (if applicable) | Decision |
 |---|---|---|---|---|
-| `COPY-001` | Primary CTA | `<English copy>` | `<namespace.key>` | Reuse / New / Preserve |
+| `COPY-001` | Primary CTA | `<actual product copy>` | `<existing key or Not used>` | Reuse / New / Preserve |
 
-用户已经定制的文案、标签和 placeholder 必须保留，除非本 PRD 明确要求修改。
+Preserve user-customized copy, labels, placeholders, pricing copy, and marketing copy unless the PRD explicitly changes them.
 
 ## 12. Design & Technical Constraints
 
 ### Design priority
 
-1. 本 PRD 的功能、状态和业务规则；
-2. 当前工程组件体系、design token 和全局样式；
-3. 截图、STITCH 或参考代码的布局与视觉比例。
+1. Product behavior, states, and business rules defined by this PRD.
+2. Current project component system, design tokens, and global styles.
+3. Screenshots, design exports, or reference code for layout and visual proportion.
 
 ### Applicable project references
 
-仅列出实际读取且由已分类范围触发的真实路径；没有时写“无”。文档存在本身不构成 Current Scope 依据。
+List only references that were actually read and are triggered by classified scope. The existence of a document does not create Current Scope.
 
 | Reference | Why applicable | Allowed effect | Scope effect |
 |---|---|---|---|
-| `<verified/path.md>` | <由哪个 Current Scope、Confirmed Next Phase 或明确 baseline 决策触发> | <约束或复用边界> | Does not create Current Scope |
+| `<verified/path.md>` | <triggering Current Scope / Confirmed Next Phase / explicit baseline decision> | <constraint or reuse boundary> | Does not create Current Scope |
 
 ### Reuse and ownership
 
-- <页面区块、组件职责、状态 owner、Reuse / Adapt / New / Do not touch 结论>
+- <page sections, component responsibilities, state ownership, and Reuse / Adapt / New / Do not touch decisions>
 
 ### Product-relevant technical constraints
 
-- <例如 Next.js App Router、next-intl、服务端边界或部署限制；不写实现命令和未验证路径>
+- <verified framework/runtime, localization approach, server/client boundary, or deployment constraint; do not include implementation commands or unverified paths>
 
 ## 13. Non-Goals
 
-- <明确不做的内容> — 原因：<范围外、下一阶段或用户明确排除>。
+- <explicit exclusion> — Reason: <out of scope / later phase / explicitly excluded by the user>.
 
 ## 14. Open Questions
 
-### OQ-001 — <未决问题；若没有真实未决项，写“无”并删除本示例>
+### OQ-001 — <Unresolved Question; if none exist, write "None" and remove this example>
 
-- Question：<问题>
-- Impact area：<范围、页面、支付、数据等>
-- Options：
-  - A：<当前合理方案 A>
-  - B：<当前合理方案 B>
-  - C：<当前合理方案 C>
+- Question: <question>
+- Impact area: <scope, page, payment, data, etc.>
+- Options:
+  - A: <current reasonable option A>
+  - B: <current reasonable option B>
+  - C: <current reasonable option C>
 - Recommended: <A / B / C>
-- Reason: <一句简短推荐理由>
-- Blocking：🔴Yes / No
-- Current implementation impact：<当前影响>
-- Owner：<负责人>
-- Needed by：<阶段或日期>
-- Temporary assumption：<已采用的临时假设；没有时写“无”>
+- Reason: <one concise reason>
+- Blocking: 🔴Yes / No
+- Current implementation impact: <current impact>
+- Owner: <owner>
+- Needed by: <stage or date>
+- Temporary assumption: <adopted temporary assumption, or None>

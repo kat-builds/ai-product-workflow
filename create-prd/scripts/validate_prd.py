@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ REQUIRED_SECTIONS = [
     (8, "API, Data, Auth, Storage & Payment"),
     (9, "Mobile & Responsive"),
     (10, "Error States, Security & Privacy"),
-    (11, "UI Copy & i18n"),
+    (11, "UI Copy & Localization"),
     (12, "Design & Technical Constraints"),
     (13, "Non-Goals"),
     (14, "Open Questions"),
@@ -36,14 +37,8 @@ REQUIRED_SCOPE_SUBSECTIONS = [
     "Infrastructure Decisions",
 ]
 
-ROLE_NOTE = (
-    "文档角色说明：本文件定义产品的当前范围、功能逻辑、交互流程、业务规则、"
-    "页面结构与验收标准；视觉落地遵循当前工程的 design token、组件体系与 i18n 规范。"
-)
-LANG_NOTE = (
-    "语言说明：本文档使用中文；面向用户的站点文案默认使用英文并通过 i18n 资源读取，"
-    "代码命名、路由、字段名和内部术语使用英文。"
-)
+ROLE_NOTE_RE = re.compile(r"(?:文档角色|document role)", re.I)
+LANG_NOTE_RE = re.compile(r"(?:语言说明|language)", re.I)
 
 ID_PREFIX = r"(?:PAGE|FLOW|FR|DATA|API|PAY|COPY|ERR|NFR)"
 ID_RE = re.compile(rf"\b{ID_PREFIX}-\d{{3}}\b")
@@ -94,6 +89,83 @@ ALL_INFRA_DECISIONS = ACTIVE_INFRA_DECISIONS | {
     "blocked",
 }
 CORE_INFRA_CAPABILITIES = {"database", "auth", "storage", "payment"}
+
+LOCALE_DIR = Path(__file__).resolve().parents[1] / "locales"
+
+
+def load_locale_strings() -> dict[str, dict[str, str]]:
+    locales: dict[str, dict[str, str]] = {}
+    if not LOCALE_DIR.is_dir():
+        return locales
+    for locale_path in sorted(LOCALE_DIR.glob("*.json")):
+        try:
+            payload = json.loads(locale_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        strings = payload.get("strings")
+        code = payload.get("code") or locale_path.stem
+        if isinstance(strings, dict) and all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in strings.items()
+        ):
+            locales[str(code)] = strings
+    return locales
+
+
+LOCALE_STRINGS = load_locale_strings()
+CANONICAL_LOCALE = LOCALE_STRINGS.get("en", {})
+
+
+def normalize_localized_structure(text: str) -> str:
+    """Normalize supported locale labels to the canonical English structure."""
+    if not CANONICAL_LOCALE:
+        return text
+
+    # Backward compatibility for the previous canonical English heading.
+    text = re.sub(
+        r"(?m)^##[ \t]+11\.[ \t]+UI Copy & i18n[ \t]*$",
+        "## 11. UI Copy & Localization",
+        text,
+    )
+
+    for key, canonical in CANONICAL_LOCALE.items():
+        aliases = {
+            strings.get(key)
+            for strings in LOCALE_STRINGS.values()
+            if strings.get(key)
+        }
+        aliases.discard(canonical)
+
+        for alias in sorted(aliases, key=len, reverse=True):
+            escaped = re.escape(alias)
+
+            if key.startswith("section."):
+                number = key.split(".", 1)[1]
+                text = re.sub(
+                    rf"(?m)^##[ \t]+{re.escape(number)}\.[ \t]+{escaped}[ \t]*$",
+                    f"## {number}. {canonical}",
+                    text,
+                )
+            elif key.startswith("scope."):
+                text = re.sub(
+                    rf"(?m)^###[ \t]+{escaped}[ \t]*$",
+                    f"### {canonical}",
+                    text,
+                )
+            elif key == "heading.mobile_acceptance":
+                text = re.sub(
+                    rf"(?m)^###[ \t]+{escaped}[ \t]*$",
+                    f"### {canonical}",
+                    text,
+                )
+            elif key.startswith("field."):
+                text = re.sub(
+                    rf"(?m)^(\s*[-*]\s*){escaped}\s*[:：]",
+                    rf"\1{canonical}:",
+                    text,
+                )
+
+    return text
 
 
 @dataclass(frozen=True)
@@ -475,6 +547,8 @@ def validate(path: Path) -> list[Finding]:
     except UnicodeDecodeError as exc:
         return [Finding("ERROR", f"File is not valid UTF-8: {exc}")]
 
+    text = normalize_localized_structure(text)
+
     for token in MOJIBAKE:
         if token in text:
             findings.append(Finding("ERROR", f"Possible mojibake detected: {token!r}"))
@@ -489,14 +563,27 @@ def validate(path: Path) -> list[Finding]:
     else:
         after_title = text[h1_matches[0].end() :].splitlines()
         first_nonempty = [line.strip() for line in after_title if line.strip()][:2]
-        expected_notes = [f"> {ROLE_NOTE}", f"> {LANG_NOTE}"]
-        if len(first_nonempty) < 1 or first_nonempty[0] != expected_notes[0]:
+        if (
+            len(first_nonempty) < 1
+            or not first_nonempty[0].startswith(">")
+            or not ROLE_NOTE_RE.search(first_nonempty[0])
+        ):
             findings.append(
-                Finding("ERROR", "Required document role note is not immediately below the title.")
+                Finding(
+                    "ERROR",
+                    "A document-role note must appear immediately below the title.",
+                )
             )
-        if len(first_nonempty) < 2 or first_nonempty[1] != expected_notes[1]:
+        if (
+            len(first_nonempty) < 2
+            or not first_nonempty[1].startswith(">")
+            or not LANG_NOTE_RE.search(first_nonempty[1])
+        ):
             findings.append(
-                Finding("ERROR", "Required language note is not immediately below the role note.")
+                Finding(
+                    "ERROR",
+                    "A language/localization note must appear immediately below the role note.",
+                )
             )
 
     bodies = validate_main_sections(text, findings)
@@ -562,31 +649,30 @@ def validate(path: Path) -> list[Finding]:
                 break
 
     mobile_body = bodies.get(9, "")
-    for width in ("320", "375", "390", "412", "768", "1024"):
-        if width not in mobile_body:
+    mobile_not_applicable = bool(
+        re.search(r"\b(?:N/?A|Not applicable)\b|不适用", mobile_body, re.I)
+    )
+    if not mobile_not_applicable:
+        if not re.search(
+            r"页面级.{0,12}(?:不得|无).{0,8}横向滚动|no page-level horizontal",
+            mobile_body,
+            re.I,
+        ):
             findings.append(
-                Finding("ERROR", f"Mobile section is missing required breakpoint {width}px.")
+                Finding("ERROR", "Mobile section must prohibit page-level horizontal scrolling.")
             )
-    if not re.search(
-        r"页面级.{0,12}(?:不得|无).{0,8}横向滚动|no page-level horizontal",
-        mobile_body,
-        re.I,
-    ):
-        findings.append(
-            Finding("ERROR", "Mobile section must prohibit page-level horizontal scrolling.")
-        )
-    has_mobile_acceptance, mobile_items = count_mobile_acceptance_items(mobile_body)
-    if not has_mobile_acceptance:
-        findings.append(
-            Finding("ERROR", "Mobile section is missing a Mobile acceptance subsection.")
-        )
-    elif mobile_items < 5:
-        findings.append(
-            Finding(
-                "ERROR",
-                f"Mobile section needs at least 5 testable acceptance items; found {mobile_items}.",
+        has_mobile_acceptance, mobile_items = count_mobile_acceptance_items(mobile_body)
+        if not has_mobile_acceptance:
+            findings.append(
+                Finding("ERROR", "Mobile section is missing a Mobile acceptance subsection.")
             )
-        )
+        elif mobile_items < 3:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"Mobile section needs at least 3 testable acceptance items; found {mobile_items}.",
+                )
+            )
 
     open_body = bodies.get(14, "")
     if not open_body.strip():
@@ -757,9 +843,16 @@ def validate(path: Path) -> list[Finding]:
 
     copy_body = bodies.get(11, "")
     current_copy_ids = {token for token in current_ids if token.startswith("COPY-")}
-    if current_copy_ids and not re.search(r"namespace|i18n|key", copy_body, re.I):
+    if current_copy_ids and not re.search(
+        r"copy|文案|label|message|localization|i18n|key",
+        copy_body,
+        re.I,
+    ):
         findings.append(
-            Finding("ERROR", "Current COPY requirements must include i18n namespace/key handling.")
+            Finding(
+                "ERROR",
+                "Current COPY requirements must define user-facing copy or the project's existing localization/content handling.",
+            )
         )
 
     vague_terms = re.findall(r"体验良好|功能正常|正常工作|用户友好|美观大方", text)

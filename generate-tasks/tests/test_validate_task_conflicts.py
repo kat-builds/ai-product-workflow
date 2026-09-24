@@ -29,7 +29,7 @@ def prompt(task_1_conflicts: str, task_2_conflicts: str) -> str:
 - 这次：x
 - 完成后：x
 
-**发给 Codex 的 Prompt**
+**发给 coding agent 的 Prompt**
 
 ```text
 x
@@ -44,7 +44,7 @@ x
 - 这次：x
 - 完成后：x
 
-**发给 Codex 的 Prompt**
+**发给 coding agent 的 Prompt**
 
 ```text
 x
@@ -58,6 +58,19 @@ class ValidateTaskConflictsTests(unittest.TestCase):
 
     def test_accepts_symmetric_conflict(self) -> None:
         self.assertEqual(MODULE.validate(prompt("2.0", "1.0")), [])
+
+    def test_accepts_english_conflict_labels_and_commas(self) -> None:
+        text = """# demo — Task Execution Prompts
+
+## Task 1.0 — First
+- Dependencies: None
+- Conflicts: 2.0
+
+## Task 2.0 — Second
+- Dependencies: None
+- Conflicts: 1.0
+"""
+        self.assertEqual(MODULE.validate(text), [])
 
     def test_rejects_missing_conflict_field(self) -> None:
         text = prompt("无", "无").replace("- 冲突：无\n", "", 1)

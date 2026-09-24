@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -136,13 +137,20 @@ TASK_PROMPT_ROLE = "本文件仅供复制 Prompt"
 TASK_PROMPT_COMPLETED_TITLE = "已完成"
 TASK_PROMPT_UNFINISHED_TITLE = "未完成"
 TASK_PROMPT_HEADING = re.compile(r"^Task (\d+\.0) — (.+)$")
+TASK_PROMPT_AGENT_LABEL = re.compile(
+    r"^(?:发给 (?:Codex|coding agent) 的 Prompt|Prompt for (?:the )?coding agent)$",
+    re.I,
+)
 TASK_PROMPT_OBSOLETE_TOP_GUIDANCE = re.compile(
     r"^(?:Next task:|Execution mode:|Execution mode rationale:|>?\s*使用方法：)",
     re.M,
 )
 TASK_PROMPT_VAGUE_EXPLANATION = re.compile(
     r"这部分能力|核心流程|补齐(?:功能|工作)|形成(?:一套)?(?:完整)?结果|"
-    r"客观(?:验证|确认)|可核对的验证结果|按已确认流程"
+    r"客观(?:验证|确认)|可核对的验证结果|按已确认流程|"
+    r"this capability|core flow|complete the feature|finish the work|"
+    r"complete result|objective verification|verifiable result|confirmed flow",
+    re.I,
 )
 
 COMMAND_PATTERN = re.compile(
@@ -190,6 +198,117 @@ PLACEHOLDER_VALUES = {
     "token",
     "password",
 }
+
+LOCALE_DIR = Path(__file__).resolve().parents[1] / "locales"
+
+
+def load_locale_strings() -> dict[str, dict[str, str]]:
+    locales: dict[str, dict[str, str]] = {}
+    if not LOCALE_DIR.is_dir():
+        return locales
+    for locale_path in sorted(LOCALE_DIR.glob("*.json")):
+        try:
+            payload = json.loads(locale_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        strings = payload.get("strings")
+        code = payload.get("code") or locale_path.stem
+        if isinstance(strings, dict) and all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in strings.items()
+        ):
+            locales[str(code)] = strings
+    return locales
+
+
+LOCALE_STRINGS = load_locale_strings()
+INTERNAL_LOCALE = LOCALE_STRINGS.get("zh", {})
+
+
+def normalize_localized_task_text(text: str) -> str:
+    """Normalize supported locale labels to the validator's legacy internal form."""
+    if not INTERNAL_LOCALE:
+        return text
+
+    for key, internal in INTERNAL_LOCALE.items():
+        aliases = {
+            strings.get(key)
+            for strings in LOCALE_STRINGS.values()
+            if strings.get(key)
+        }
+        aliases.discard(internal)
+
+        for alias in sorted(aliases, key=len, reverse=True):
+            escaped = re.escape(alias)
+
+            if key in {"heading.completed", "heading.unfinished"}:
+                text = re.sub(
+                    rf"(?m)^(##[ \t]+){escaped}[ \t]*$",
+                    rf"\1{internal}",
+                    text,
+                )
+            elif key == "status_legend":
+                text = re.sub(
+                    rf"(?m)^(>?[ \t]*){escaped}\s*[:：]",
+                    rf"\1{internal}：",
+                    text,
+                )
+            elif key.startswith("field.") or key == "prompt.conflicts":
+                text = re.sub(
+                    rf"(?m)^(\s*[-*]\s*){escaped}\s*[:：]",
+                    rf"\1{internal}：",
+                    text,
+                )
+            elif key in {"prompt.now", "prompt.this_task", "prompt.after"}:
+                text = re.sub(
+                    rf"(?m)^(\s*[-*]\s*){escaped}\s*[:：]",
+                    rf"\1{internal}：",
+                    text,
+                )
+            elif key == "prompt.agent_label":
+                text = re.sub(
+                    rf"(?mi)^\*\*{escaped}\*\*[ \t]*$",
+                    f"**{internal}**",
+                    text,
+                )
+                text = re.sub(
+                    rf"(?mi)^(###?[ \t]+){escaped}[ \t]*$",
+                    rf"\1{internal}",
+                    text,
+                )
+            elif key == "prompt.role":
+                text = text.replace(alias, internal)
+
+    acceptance_field = INTERNAL_LOCALE.get("field.acceptance", "验收方式")
+    for value_key in ("value.acceptance.ai", "value.acceptance.human"):
+        internal_value = INTERNAL_LOCALE.get(value_key)
+        if not internal_value:
+            continue
+        for strings in LOCALE_STRINGS.values():
+            alias = strings.get(value_key)
+            if not alias or alias == internal_value:
+                continue
+            text = re.sub(
+                rf"(?m)^(- {re.escape(acceptance_field)}：\s*\x60?){re.escape(alias)}(\x60?[ \t]*)$",
+                rf"\1{internal_value}\2",
+                text,
+            )
+
+    dependency_label = INTERNAL_LOCALE.get("field.dependencies", "依赖")
+    conflict_label = INTERNAL_LOCALE.get("prompt.conflicts", "冲突")
+    none_value = INTERNAL_LOCALE.get("none", "无")
+    for label in (dependency_label, conflict_label):
+        for strings in LOCALE_STRINGS.values():
+            alias_none = strings.get("none")
+            if not alias_none or alias_none == none_value:
+                continue
+            text = re.sub(
+                rf"(?m)^(- {re.escape(label)}：\s*\x60?){re.escape(alias_none)}(\x60?[ \t]*)$",
+                rf"\1{none_value}\2",
+                text,
+            )
+
+    return text
 
 
 @dataclass
@@ -587,9 +706,9 @@ def validate_sections(
     if dependencies and DEPENDENCY_HEADER not in dependencies:
         errors.append("Task Dependency Graph table header is missing or invalid.")
 
-    if re.search(r"^- (?:执行 Prompt|Stop Condition)：", text, re.M):
+    if re.search(r"^- (?:执行 Prompt|Execution Prompt|Stop Condition)\s*[:：]", text, re.M):
         errors.append(
-            "tasks.md must not contain 执行 Prompt or Stop Condition fields; "
+            "tasks.md must not contain Execution Prompt or Stop Condition fields; "
             "copyable prompts belong in task-prompt.md."
         )
     for forbidden_heading in (
@@ -754,7 +873,7 @@ def validate_parent(
     for name in REQUIRED_PARENT_FIELDS:
         if name not in fields:
             errors.append(f"{label}: missing field '{name}'.")
-    for forbidden in ("执行 Prompt", "Stop Condition"):
+    for forbidden in ("执行 Prompt", "Execution Prompt", "Stop Condition"):
         if forbidden in fields:
             errors.append(
                 f"{label}: tasks.md parent must not contain '{forbidden}'; "
@@ -789,7 +908,7 @@ def validate_parent(
         )
 
     if acceptance == "AI 验证" and state == READY_FOR_REVIEW_STATE:
-        errors.append(f"{label}: AI 验证 cannot use {READY_FOR_REVIEW_STATE}.")
+        errors.append(f"{label}: AI verification cannot use {READY_FOR_REVIEW_STATE}.")
 
     source = fields.get("来源", "")
     prd_ids = {
@@ -873,13 +992,19 @@ def validate_parent(
                 {"User Action Required"},
             )
         timing = scalar(fields, "需要时间")
-        if timing and not any(token in timing for token in ("开始任务前", "执行到")):
+        if timing and not (
+            any(token in timing for token in ("开始任务前", "执行到"))
+            or re.search(r"\bbefore\b.*\btask\b|\bwhen\b.*\breach|\bduring\b", timing, re.I)
+        ):
             errors.append(
-                f"{label}: 需要时间 must say 开始任务前 or 执行到某一步时."
+                f"{label}: Timing must state when the prerequisite is needed."
             )
         completion = fields.get("完成后", "")
-        if completion and ("AI" not in completion or "继续" not in completion):
-            warnings.append(f"{label}: 完成后 should say that AI continues from the blocker.")
+        if completion and (
+            "AI" not in completion
+            or not re.search(r"继续|\bcontinue|\bresume", completion, re.I)
+        ):
+            warnings.append(f"{label}: After should say that AI continues from the blocker.")
         if prerequisite_state == "Pending" and state in {
             READY_FOR_REVIEW_STATE,
             APPROVED_STATE,
@@ -974,7 +1099,7 @@ def validate_gate(
     if failure and (
         IN_PROGRESS_STATE not in failure
         or not re.search(r"(?:重开|reopen)", failure, re.I)
-        or "AI 验证" not in failure
+        or not re.search(r"AI\s+verification|AI 验证", failure, re.I)
     ):
         errors.append(
             f"{label}: 未通过 must reopen affected tasks to "
@@ -1049,7 +1174,15 @@ def validate_blocked_task(
         errors.append(
             f"{label}: 受影响 PRD ID must contain a backticked stable PRD ID."
         )
-    for forbidden in ("执行 Prompt", "Stop Condition", "AI 验证", "人工验收关卡"):
+    for forbidden in (
+        "执行 Prompt",
+        "Execution Prompt",
+        "Stop Condition",
+        "AI 验证",
+        "AI Verification",
+        "人工验收关卡",
+        "Human Review Gate",
+    ):
         if forbidden in fields:
             errors.append(f"{label}: Blocked Task must not contain '{forbidden}'.")
     if re.search(r"^###\s+\[[ xX]\]", block, re.M):
@@ -1575,10 +1708,10 @@ def validate_execution_plan(
         "Main Manager" in line and "High" in line for line in plan.splitlines()
     ):
         errors.append("Execution Plan must assign Main Manager reasoning level High.")
-    if not re.search(r"独立\s+branch", plan, re.I) or not re.search(
-        r"独立\s+worktree", plan, re.I
+    if not re.search(r"独立\s+branch|independent\s+branch", plan, re.I) or not re.search(
+        r"独立\s+worktree|independent\s+worktree|equivalent\s+workspace", plan, re.I
     ):
-        errors.append("Execution Plan must declare independent branch/worktree isolation.")
+        errors.append("Execution Plan must declare independent branch/workspace isolation.")
     if not re.search(r"Main Manager[^\n]*(?:唯一|only)[^\n]*(?:merge gate|merge)", plan, re.I):
         errors.append("Execution Plan must make Main Manager the unique merge gate.")
     operation_titles = (
@@ -1743,7 +1876,7 @@ def validate_execution_plan(
         plan,
     ):
         warnings.append(
-            "Execution Plan names a specific model; use only Low/Middle/High reasoning levels."
+            "Execution Plan names a specific model; use only Low/Medium/High reasoning levels."
         )
 
 
@@ -1764,7 +1897,7 @@ def task_prompt_blocks(
         if not match:
             errors.append(
                 f"task-prompt.md has invalid level-2 heading: ## {heading.title}; "
-                "expected ## Task X.X — <标题>."
+                "expected ## Task X.X — <title>."
             )
             continue
         task_id, title = match.groups()
@@ -1794,7 +1927,7 @@ def validate_task_prompt(
     ):
         errors.append(
             "task-prompt.md must contain exactly one "
-            "'# <项目名或域名> — Task Execution Prompts' title with a resolved name."
+            "'# <Project name or domain> — Task Execution Prompts' title with a resolved name."
         )
     if TASK_PROMPT_ROLE not in text:
         errors.append(
@@ -1860,11 +1993,15 @@ def validate_task_prompt(
                 )
                 completed_ids: list[str] = []
             else:
-                completed_ids = completed_lines[0].split("、")
+                completed_ids = [
+                    token
+                    for token in re.split(r"\s*(?:、|,)\s*", completed_lines[0])
+                    if token
+                ]
             if any(not re.fullmatch(r"\d+\.0", task_id) for task_id in completed_ids):
                 errors.append(
-                    "task-prompt.md '## 已完成' must use plain Task IDs "
-                    "joined by Chinese delimiter '、'."
+                    "task-prompt.md Completed summary must use plain Task IDs "
+                    "joined by commas or 、."
                 )
             if len(completed_ids) != len(set(completed_ids)):
                 errors.append("task-prompt.md '## 已完成' repeats a Task ID.")
@@ -1897,14 +2034,18 @@ def validate_task_prompt(
                     "non-empty line of Task IDs."
                 )
             else:
-                unfinished_tokens = unfinished_lines[0].split("、")
+                unfinished_tokens = [
+                    token
+                    for token in re.split(r"\s*(?:、|,)\s*", unfinished_lines[0])
+                    if token
+                ]
                 if any(
                     not re.fullmatch(r"❗?\d+\.0", token)
                     for token in unfinished_tokens
                 ):
                     errors.append(
-                        "task-prompt.md '## 未完成' must use Task IDs, optionally "
-                        "prefixed by ❗, joined by Chinese delimiter '、'."
+                        "task-prompt.md Unfinished summary must use Task IDs, optionally "
+                        "prefixed by ❗, joined by commas or 、."
                     )
                 unfinished_ids = [
                     token.removeprefix("❗") for token in unfinished_tokens
@@ -2017,14 +2158,15 @@ def validate_task_prompt(
 
         block_headings = markdown_headings(block)
         bold_prompt_marker = re.search(
-            r"(?m)^\*\*发给 Codex 的 Prompt\*\*[ \t]*$",
+            r"(?mi)^\*\*(?:发给 (?:Codex|coding agent) 的 Prompt|Prompt for (?:the )?coding agent)\*\*[ \t]*$",
             block,
         )
         legacy_prompt_heading = next(
             (
                 heading
                 for heading in block_headings
-                if heading.level == 3 and heading.title == "发给 Codex 的 Prompt"
+                if heading.level == 3
+                and TASK_PROMPT_AGENT_LABEL.fullmatch(heading.title)
             ),
             None,
         )
@@ -2034,7 +2176,7 @@ def validate_task_prompt(
             prompt_marker_start = legacy_prompt_heading.start
         else:
             prompt_marker_start = len(block)
-            errors.append(f"Task {task_id} is missing its Codex Prompt label.")
+            errors.append(f"Task {task_id} is missing its coding-agent Prompt label.")
 
         pre_prompt_block = block[:prompt_marker_start]
         explanation_start = re.search(r"(?m)^[-*]\s*现在：", pre_prompt_block)
@@ -2101,13 +2243,17 @@ def validate_task_prompt(
             if strip_ticks(dependency_display) != "无":
                 errors.append(f"Task {task_id} without dependencies must display '依赖：无'.")
         else:
-            allowed_text = "、".join(
-                [*parent.dependencies, *sorted(blocker_refs)]
+            allowed_ids = [*parent.dependencies, *sorted(blocker_refs)]
+            normalized_dependency_display = re.sub(
+                r"\s*(?:、|,)\s*",
+                "、",
+                strip_ticks(dependency_display),
             )
-            if strip_ticks(dependency_display) != allowed_text:
+            allowed_text = "、".join(allowed_ids)
+            if normalized_dependency_display != allowed_text:
                 errors.append(
-                    f"Task {task_id} dependency display must contain only IDs "
-                    f"separated by '、': {allowed_text}."
+                    f"Task {task_id} dependency display must contain only the expected IDs "
+                    f"in order: {', '.join(allowed_ids)}."
                 )
 
         explanation_body = (
@@ -2151,7 +2297,12 @@ def validate_task_prompt(
                 f"Task {task_id} explanation uses vague engineering language; "
                 "name the real page, user action, problem, and visible result."
             )
-        if not re.search(r"用户|访客|客户|管理员|你|系统", explanation_body):
+        if not re.search(
+            r"用户|访客|客户|管理员|你|系统|\buser\b|\bvisitor\b|\bcustomer\b|"
+            r"\badmin(?:istrator)?\b|\byou\b|\bsystem\b",
+            explanation_body,
+            re.I,
+        ):
             errors.append(
                 f"Task {task_id} explanation must name who sees the change or "
                 "how the system behaves."
@@ -2173,11 +2324,25 @@ def validate_task_prompt(
         if "docs/project/tasks.md" not in prompt:
             prompt_issues.append("canonical tasks.md path")
         for description, pattern in (
-            ("read complete task", r"读取[^\n。]*完整(?:任务|范围)"),
-            ("inspect current implementation", r"检查当前"),
-            ("task verification", r"任务要求[^。\n]*验证|T-\*[^\n。]*验证"),
+            (
+                "read complete task",
+                r"读取[^\n。]*完整(?:任务|范围)|read[^\n.]*complete[^\n.]*(?:task|scope)",
+            ),
+            (
+                "inspect current implementation",
+                r"检查当前|inspect[^\n.]*current[^\n.]*implementation",
+            ),
+            (
+                "task verification",
+                r"任务要求[^。\n]*验证|T-\*[^\n。]*验证|"
+                r"(?:implement|complete)[^\n.]*and[^\n.]*verif|verify[^\n.]*task",
+            ),
             ("commit instruction", r"提交|commit"),
-            ("task-prefixed commit", rf"以\s*{re.escape(task_id)}\s*开头"),
+            (
+                "task-prefixed commit",
+                rf"以\s*{re.escape(task_id)}\s*开头|"
+                rf"(?:subject|message)[^\n.]*starts?\s+with\s+{re.escape(task_id)}",
+            ),
         ):
             if not re.search(pattern, prompt, re.I):
                 prompt_issues.append(description)
@@ -2203,8 +2368,11 @@ def validate_task_prompt(
             if not re.search(
                 r"不得修改[^。\n]*docs/project/tasks\.md[^。\n]*"
                 r"docs/project/task-prompt\.md|"
-                r"不得修改[^。\n]*(?:两份任务文档|任务文档)",
+                r"不得修改[^。\n]*(?:两份任务文档|任务文档)|"
+                r"(?:do not|must not)[^\n.]*modify[^\n.]*"
+                r"docs/project/tasks\.md[^\n.]*docs/project/task-prompt\.md",
                 prompt,
+                re.I,
             ):
                 prompt_issues.append("shared task-document prohibition")
             if not re.search(r"Completion Report", prompt, re.I):
@@ -2234,7 +2402,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Validate canonical docs/project/tasks.md and derived "
-            "docs/project/task-prompt.md generated by $generate-tasks."
+            "docs/project/task-prompt.md generated by generate-tasks."
         )
     )
     parser.add_argument("tasks_file", type=Path)
@@ -2286,6 +2454,7 @@ def main() -> int:
         if re.search(rf"^- {re.escape(field_name)}：", text, re.M):
             errors.append(f"Legacy/conflicting field remains: {field_name}")
 
+    text = normalize_localized_task_text(text)
     headings = markdown_headings(text)
     validate_sections(text, headings, errors)
     validate_traceability_table(text, headings, errors)
@@ -2378,6 +2547,7 @@ def main() -> int:
             f"detected in task-prompt.md near line {prompt_secret_line}; value is "
             "intentionally not echoed."
         )
+    prompt_text = normalize_localized_task_text(prompt_text)
     validate_task_prompt(prompt_text, parents, errors, warnings)
 
     if errors:

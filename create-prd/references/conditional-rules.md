@@ -21,7 +21,7 @@ For every genuinely unresolved `Open Questions` item in the PRD, include:
 - `Recommended: X`
 - one concise `Reason`
 - `Blocking: 🔴Yes` or `Blocking: No`
-- `Temporary assumption`, using `None` or `无` when no assumption is adopted
+- `Temporary assumption`, using `None` when no assumption is adopted
 
 Do not apply this unresolved-question schema to items already marked resolved.
 
@@ -49,7 +49,7 @@ Read provider-specific documentation only after that provider is confirmed for t
 
 Read these references only when the confirmed scope triggers the subject or an explicitly named `Existing Baseline` must be verified.
 
-For AI image generation, reference images, generation history, image storage, model routing, or credits, read `docs/playbooks/ai-image-architecture.md` only if it exists and the scope actually triggers that topic. Use it to identify existing contracts and reuse boundaries, not to create scope.
+For AI image generation, reference images, generation history, image storage, model routing, or credits, read a project-specific architecture/playbook only when the scope actually triggers that topic and the reference is named by project instructions or verified in the repository. Do not assume a fixed playbook path. Use it to identify existing contracts and reuse boundaries, not to create scope.
 
 ## Infrastructure depth
 

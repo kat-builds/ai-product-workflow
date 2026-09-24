@@ -1,11 +1,11 @@
 # Core task-generation rules
 
-Use these rules for every `$generate-tasks` run.
+Use these rules for every `generate-tasks` run.
 
 ## Authority and write boundary
 
 - `docs/project/PRD.md` is the only product-scope and business-rule authority.
-- Applicable `AGENTS.md` files define repository operation, validation, and user-interaction constraints.
+- Applicable project/agent instruction files define repository operation, validation, and user-interaction constraints.
 - Repository code, config, scripts, tests, and deployment files establish implementation facts only; they do not create product requirements.
 - Design, module, architecture, and playbook documents constrain implementation only when the PRD or applicable project rules make them relevant.
 - Never infer new Current Scope from installed modules, template capabilities, routes, dependencies, providers, or reference documents.
@@ -19,7 +19,7 @@ Do not modify the PRD, business code, tests, config, dependencies, migrations, d
 
 If the user requests review/audit only, stay read-only unless they explicitly ask to fix the task documents.
 
-When invoked from `$create-prd`, use only the already validated PRD version and do not reopen product scope.
+When invoked from the `create-prd` Skill, use only the already validated PRD version and do not reopen product scope.
 
 ## Document roles
 
@@ -102,6 +102,7 @@ If `tasks.md` already exists, update it incrementally unless the user explicitly
 Inspect only repository areas needed for the PRD scope being planned.
 
 - Use real paths and real package scripts.
+- Derive the framework, package manager, localization/content system, providers, test commands, and deployment tooling from the current repository; do not inherit those assumptions from a template, another repository, or this Skill.
 - Prefer nearby implementation patterns and reusable components/utilities.
 - Record a clear TBD only when a path or implementation fact genuinely cannot be verified.
 - Do not invent provider setup, database work, deployment work, migrations, routes, or tests merely because the template supports them.

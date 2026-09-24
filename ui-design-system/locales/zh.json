@@ -1,0 +1,18 @@
+{
+  "code": "zh",
+  "strings": {
+    "section.1": "权威来源与范围",
+    "section.2": "设计概况",
+    "section.3": "基础规范",
+    "section.4": "布局与响应式系统",
+    "section.5": "组件模式",
+    "section.6": "交互规则",
+    "section.7": "UI 文案与标签",
+    "section.8": "复用与组件归属",
+    "section.9": "无障碍与输入方式",
+    "section.10": "应该做 / 不应该做",
+    "section.11": "已记录的例外",
+    "section.12": "治理",
+    "section.13": "设计审计清单"
+  }
+}

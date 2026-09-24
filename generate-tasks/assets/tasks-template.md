@@ -1,10 +1,11 @@
 # Implementation Tasks
 
 Last updated: YYYY-MM-DD
+Document language: en
 
-> 文档角色说明：本文件是当前项目唯一 canonical task source of truth，只定义任务范围、要求、依赖、状态和验收。需求与业务规则以 `docs/project/PRD.md` 为准；用户实际复制给 Codex 的 Prompt 位于 `docs/project/task-prompt.md`。若两份任务文档冲突，以本文件为准并重新生成 `task-prompt.md`。
+> Document role: This file is the canonical task source of truth for the current project. It defines task scope, requirements, dependencies, status, and acceptance. Product requirements and business rules come from `docs/project/PRD.md`; the copyable execution prompts live in `docs/project/task-prompt.md`. If the two task documents disagree, this file wins and `task-prompt.md` must be regenerated.
 
-> 任务状态：⬜ Pending · 🔵 In progress · 🟡 Ready for review · ✅ Approved · ⛔ Blocked
+> Task status: ⬜ Pending · 🔵 In progress · 🟡 Ready for review · ✅ Approved · ⛔ Blocked
 
 ## Scope Freeze
 
@@ -14,7 +15,7 @@ Last updated: YYYY-MM-DD
 
 ### Existing Baseline
 
-- `PAGE-001` — 保留、复用、隐藏或不触碰的方式。
+- `PAGE-001` — how the existing capability is preserved, reused, hidden, or intentionally left untouched.
 
 ### Out of Scope
 
@@ -30,7 +31,7 @@ Last updated: YYYY-MM-DD
 
 - ...
 
-#### 执行中发现的范围外事项
+#### Out-of-scope findings discovered during execution
 
 - ...
 
@@ -56,9 +57,9 @@ Last updated: YYYY-MM-DD
 
 | Task Package | Direct Dependencies | Unlocks | Start Condition |
 |---|---|---|---|
-| `1.0` | `None` | `2.0` | PRD 与 repository facts 已足够 |
-| `2.0` | `1.0` | `None` | `1.0` ✅ Approved；所需人工前置在真实 provider 验证前提供 |
-| `3.0` | `None` | `None` | PRD 与 repository facts 已足够；不因编号等待 `1.0` |
+| `1.0` | `None` | `2.0` | PRD and repository facts are sufficient |
+| `2.0` | `1.0` | `None` | `1.0` ✅ Approved; required human prerequisite is provided before real provider verification |
+| `3.0` | `None` | `None` | PRD and repository facts are sufficient; task number does not create a dependency on `1.0` |
 
 ### External Dependencies & Blockers
 
@@ -66,131 +67,131 @@ Last updated: YYYY-MM-DD
 |---|---|---|---|---|---|
 | ... | `FR-002` | Reuse / Configure / Defer | ... | `VARIABLE_NAME` | ... |
 
-<!-- 只有真实 blocker 时输出下列结构。 -->
+<!-- Include the following structure only when a real blocker exists. -->
 
-### BLOCKED-001: 标题
+### BLOCKED-001: Title
 
-- 状态：`⛔ Blocked`
-- 受影响 PRD ID：`FR-001`
-- 用户介入：`🔴 P1 User Decision Required`
-- 阻塞来源：...
-- 原因：...
-- 解除条件：...
-- 解除前允许做：...
-- 禁止做：...
+- Status: `⛔ Blocked`
+- Affected PRD IDs: `FR-001`
+- User Intervention: `🔴 P1 User Decision Required`
+- Blocker Source: ...
+- Reason: ...
+- Unlock Condition: ...
+- Allowed Before Unlock: ...
+- Do Not Do: ...
 
 ## Relevant Files
 
-### 核心必改
+### Core files to change
 
-- `path` — 操作和边界。
+- `path` — operation and boundary.
 
-### 可能涉及
+### May be involved
 
-- `path` — 触发条件。
+- `path` — trigger condition.
 
-### 新增文件
+### New files
 
-- `path` — 用途，或明确写为 `TBD — verify actual file path in repo before implementation.`。
+- `path` — purpose, or explicitly write `TBD — verify actual file path in repo before implementation.`
 
 ## Task Packages
 
-<!-- 人工前置、前置状态和真实联调都是单行精确枚举字段。父任务不得包含执行 Prompt、Stop Condition 或 Worker 启动信息。 -->
+<!-- Human prerequisites, prerequisite state, and real integration use the exact scalar enums defined by the validator. Parent tasks must not contain execution prompts, Stop Conditions, or Worker launch information. -->
 
-### [ ] 1.0 完成可客观验证的结果
+### [ ] 1.0 Complete an objectively verifiable result
 
-- 任务类型：`Formal Task Package`
-- 状态：`⬜ Pending`
-- 验收方式：`AI 验证`
-- 人工前置：`None`
-- 前置状态：`Not required`
-- 真实联调：`Not required`
-- 来源：`FR-001`
-- 目标：...
-- 边界 / 不做：...
-- 依赖：`None`
-- 子项：
+- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification`
+- Human Prerequisite: `None`
+- Prerequisite Status: `Not required`
+- Real Integration: `Not required`
+- Source: `FR-001`
+- Goal: ...
+- Boundary / Non-goals: ...
+- Dependencies: `None`
+- Subtasks:
   - 1.1 ...
   - 1.2 ...
-- 涉及文件：
+- Files:
   - `path` — ...
-- AI 验证：`T-001`, `T-002`
+- AI Verification: `T-001`, `T-002`
 
-### [ ] 2.0 完成需要人工前置但可由 AI 验收的结果
+### [ ] 2.0 Complete a result that needs a human prerequisite but can still be objectively verified by AI
 
-- 任务类型：`Formal Task Package`
-- 状态：`⬜ Pending`
-- 验收方式：`AI 验证`
-- 人工前置：`Required`
-- 前置状态：`Pending`
-- 用户介入：`🔴 P1 User Action Required`
-- 用户需完成：
-  1. 前往明确的 provider test mode 配置入口。
-  2. 按本任务列出的名称完成所需授权或配置，不在文档中记录 secret value。
-  3. 确认测试环境可以使用该配置。
-- 需要时间：`执行到 provider test mode 验证时`
-- 完成后：AI 从阻塞步骤继续实现和验证，不再要求用户参与本任务验收。
-- 真实联调：`Pending`
-- 来源：`FR-002`
-- 目标：...
-- 边界 / 不做：一般访问权限不授权真实扣款、正式发布、生产删除或其他不可逆动作。
-- 依赖：`1.0`
-- 子项：
+- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification`
+- Human Prerequisite: `Required`
+- Prerequisite Status: `Pending`
+- User Intervention: `🔴 P1 User Action Required`
+- User Steps:
+  1. Open the confirmed provider test-mode configuration entry.
+  2. Complete the required authorization or configuration using the names in this task. Do not record secret values in the document.
+  3. Confirm that the test environment can use the configuration.
+- Timing: `when execution reaches provider test-mode verification`
+- After: AI resumes implementation and verification from the blocked step; the user is not required for this task's acceptance.
+- Real Integration: `Pending`
+- Source: `FR-002`
+- Goal: ...
+- Boundary / Non-goals: ordinary account access does not authorize real charges, production release, production deletion, or other irreversible actions.
+- Dependencies: `1.0`
+- Subtasks:
   - 2.1 ...
-- 涉及文件：
+- Files:
   - `path` — ...
-- AI 验证：`T-003`
+- AI Verification: `T-003`
 
-### [ ] 3.0 完成仍需用户判断的结果
+### [ ] 3.0 Complete a result that still needs human judgment
 
-- 任务类型：`Formal Task Package`
-- 状态：`⬜ Pending`
-- 验收方式：`AI 验证后人工复查`
-- 人工前置：`None`
-- 前置状态：`Not required`
-- 真实联调：`Not required`
-- 来源：`FR-003`
-- 目标：...
-- 边界 / 不做：...
-- 依赖：`None`
-- 子项：
+- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification then human review`
+- Human Prerequisite: `None`
+- Prerequisite Status: `Not required`
+- Real Integration: `Not required`
+- Source: `FR-003`
+- Goal: ...
+- Boundary / Non-goals: ...
+- Dependencies: `None`
+- Subtasks:
   - 3.1 ...
-- 涉及文件：
+- Files:
   - `path` — ...
-- AI 验证：`T-004`
-- 人工验收关卡：`G-01` — 正式发布前
+- AI Verification: `T-004`
+- Human Review Gate: `G-01` — before production release
 
-<!-- 收集所有 parent 的人工验收关卡引用，并为每个唯一 G-* ID 输出且只输出一个正式 checkpoint。 -->
+<!-- Collect every parent Human Review Gate reference and define each unique G-* checkpoint exactly once. -->
 
-### [ ] G-01 人工复查 — 正式发布前
+### [ ] G-01 Human review — before production release
 
-- 覆盖任务：`3.0`
-- 用户介入：`🔴 P2 User Decision Required`
-- 设置原因：最终体验需要用户作不可替代的主观判断，失败会影响发布决定。
-- 用户需检查：
-  1. 前往已通过 AI 验证的目标页面。
-  2. 按已确认的核心流程完成一次操作。
-  3. 判断整体体验是否符合产品目标，并记录任何需要修改的具体问题。
-- 通过标准：页面体验符合已确认目标，没有需要修改的主观体验问题。
-- 未通过：记录具体问题，把 `3.0` 重开为 🔵 In progress；修复并重新完成 AI 验证后，再重复本次人工复查。
-- 通过后：把 `G-01` 更新为 [x]，把 `3.0` 更新为 ✅ Approved 和 [x]，提交状态更新后再继续。
+- Covered Tasks: `3.0`
+- User Intervention: `🔴 P2 User Decision Required`
+- Review Reason: the final experience requires a subjective user judgment that AI verification cannot replace.
+- User Checks:
+  1. Open the target screen after AI verification has passed.
+  2. Complete the confirmed core flow once.
+  3. Decide whether the overall experience matches the product goal and record any specific issue that still needs a change.
+- Pass Criteria: the experience matches the confirmed goal and no subjective issue still requires a change.
+- If Failed: record the concrete issue, reopen `3.0` as 🔵 In progress, fix it, rerun AI verification, then repeat this review.
+- After Passing: mark `G-01` as [x], update `3.0` to ✅ Approved and [x], then continue after the status update is committed.
 
 ## Verification Plan
 
 | ID | Stage | Scenario | Executor | Page / Entry | Steps or Command | Expected Result | Status |
 |---|---|---|---|---|---|---|---|
-| `T-001` | `1.0` | Type checking | AI | Repository root | `pnpm typecheck` | 命令成功且没有 TypeScript error | Not tested |
-| `T-002` | `1.0` | Core user flow | AI | `/path` | 使用浏览器或仓库已有 E2E 流程执行主要操作 | 状态正确保存并展示 | Not tested |
-| `T-003` | `2.0` | Provider test mode | AI | Test environment | 在所需人工前置完成后调用 provider test mode | 返回有效结果且没有认证错误 | Pending |
-| `T-004` | `3.0` | Objective UI states | AI | `/path` | 检查相关 initial、loading、error、success 和响应式状态 | 所有客观状态符合 PRD 且页面无横向溢出 | Not tested |
+| `T-001` | `1.0` | Type checking | AI | Repository root | Use the current repository's verified typecheck command, if one exists | Command succeeds with no applicable type errors | Not tested |
+| `T-002` | `1.0` | Core user flow | AI | `/path` | Use an existing deterministic repository flow/test when available; otherwise use the project's defined verification method | State is saved and displayed correctly | Not tested |
+| `T-003` | `2.0` | Provider test mode | AI | Test environment | After the human prerequisite is provided, exercise the confirmed provider test mode | Valid result is returned with no authentication error | Pending |
+| `T-004` | `3.0` | Objective UI states | AI | `/path` | Check the relevant initial, loading, error, success, and responsive states using the project's verification policy | Objective states match the PRD and the page has no unintended horizontal overflow | Not tested |
 
 ## Development Rules & Task Management
 
-* 严格按 PRD、Scope Freeze 和父任务边界执行；范围外内容进入 Follow-up / Later。
-* 用户可见最终文案通过 i18n；不得覆盖用户已定制文案。
-* 优先复用现有组件和语义 token；新增组件遵循 Component Reuse Summary。
-* 未经 PRD 或父任务明确要求，不删除现有文件、路由、组件或能力，也不用占位内容替换。
-* Secret 只存在服务端或部署平台 secret storage，不进入代码、Markdown、日志或截图。
-* 真实 provider 或外部依赖未实际联调时，`真实联调` 保持 `Pending`。
-* 最终复检发现缺陷时，将受影响的 `✅ Approved` 任务重开为 `🔵 In progress`，并重置失效的 `G-*`；修复后重新走对应状态流。
-* `docs/project/task-prompt.md` 只是派生执行入口；任何冲突都以本文件为准并重新同步。
+* Follow the PRD, Scope Freeze, and parent-task boundary. Put out-of-scope findings in Follow-up / Later.
+* User-facing copy follows the project's existing language/localization/content system. Do not add i18n merely for task planning, and do not overwrite user-customized copy.
+* Reuse existing components and semantic tokens. New components follow the Component Reuse Summary.
+* Do not delete existing files, routes, components, or capabilities unless the PRD or parent task explicitly requires it, and do not replace working behavior with placeholders.
+* Secrets belong only in server-side or deployment-platform secret storage, never in code, Markdown, logs, or screenshots.
+* Keep `Real Integration` as `Pending` until the real provider/external dependency has actually been verified.
+* If final review invalidates an approved result, reopen the affected `✅ Approved` task as `🔵 In progress`, reset any invalidated `G-*` gate, and rerun only the affected verification.
+* `docs/project/task-prompt.md` is a derived execution entry point. If it conflicts with this file, regenerate it from this canonical task state.

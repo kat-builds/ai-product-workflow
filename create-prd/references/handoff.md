@@ -6,9 +6,9 @@ Read this file only after `docs/project/PRD.md` has been updated and validated s
 
 `docs/project/PRD.md` defines product requirements. `docs/project/tasks.md` and `docs/project/task-prompt.md` are derived execution plans and must not redefine the PRD.
 
-After PRD validation, decide whether `$generate-tasks` can safely synchronize the Task documents in the same turn.
+After PRD validation, decide whether the `generate-tasks` Skill can safely synchronize the Task documents in the same turn.
 
-## Continue to `$generate-tasks` when
+## Continue to `generate-tasks` when
 
 Same-turn Task synchronization is appropriate when all of the following are true:
 
@@ -39,11 +39,11 @@ Report the blocker plainly; do not manufacture Tasks to make the workflow look c
 
 If the handoff is allowed:
 
-1. Load and follow `$generate-tasks`.
+1. Load and follow the `generate-tasks` Skill.
 2. Let that Skill own Task format, dependency/conflict analysis, validation, and Task document updates.
-3. Do not copy `$generate-tasks` rules into this Skill.
+3. Do not copy the `generate-tasks` Skill rules into this Skill.
 4. Do not implement product code, tests, migrations, configuration, dependencies, deployment, or production changes as part of the PRD handoff.
 
-A valid handoff may update only the Task documents allowed by `$generate-tasks`, in addition to the already validated PRD.
+A valid handoff may update only the Task documents allowed by the `generate-tasks` Skill, in addition to the already validated PRD.
 
 If the handoff is not allowed, stop after reporting the validated PRD and the reason Task synchronization must wait.

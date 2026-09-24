@@ -1,6 +1,6 @@
 # Core Design System rules
 
-Use these rules for every `$ui-design-system` run.
+Use these rules for every `ui-design-system` run.
 
 ## Separate the sources of truth
 
@@ -8,7 +8,7 @@ Keep document roles explicit:
 
 - **PRD** — user-facing product behavior, scope, business rules, data semantics.
 - **DESIGN_SYSTEM.md** — reusable visual language, component roles, responsive behavior, interaction-system rules.
-- **AGENTS.md** — operational instruction that tells AI when it must read and obey the Design System.
+- **Project/agent instructions** — the applicable operating file (for example `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent) that tells AI when it must read and obey the Design System.
 - **Implementation code** — evidence of current implementation, not automatic design authority.
 
 Do not put feature scope into the Design System. Do not put reusable CSS/component geometry into the PRD unless it is itself a user-observable product requirement.

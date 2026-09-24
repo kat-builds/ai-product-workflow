@@ -63,7 +63,7 @@ def task_prompt_entry(
     explanation: str | None = None,
 ) -> str:
     explanation = explanation or """- 现在：用户还不能从页面完整提交操作，也看不到明确结果。
-- 这次：Codex 会把填写、提交、成功结果和失败提示连接起来。
+- 这次：coding agent 会把填写、提交、成功结果和失败提示连接起来。
 - 完成后：用户可以完成提交，成功时看到结果，失败时知道发生了什么。"""
     return f"""## Task {task_id} — {title}
 
@@ -71,7 +71,7 @@ def task_prompt_entry(
 
 {explanation}
 
-**发给 Codex 的 Prompt**
+**发给 coding agent 的 Prompt**
 
 ```text
 {opener} docs/project/tasks.md 中的 Task {task_id}，先读取完整任务并检查当前实现，按任务要求完成实现和验证。{extra_prompt}完成后更新 docs/project/tasks.md 和 docs/project/task-prompt.md，并创建以 {task_id} 开头的 commit。
@@ -184,7 +184,7 @@ class TaskPromptValidationTests(unittest.TestCase):
             title="Task Execution Prompts",
         )
         errors = self.validate(text, parents)
-        self.assertTrue(any("项目名或域名" in error for error in errors))
+        self.assertTrue(any("Project name or domain" in error for error in errors))
 
     def test_accepts_unfinished_summary_in_prompt_order_with_critical_mark(self) -> None:
         parents = {
@@ -274,8 +274,8 @@ class TaskPromptValidationTests(unittest.TestCase):
             "- 现在：",
             "### 这项任务是做什么的\n\n- 现在：",
         ).replace(
-            "**发给 Codex 的 Prompt**",
-            "### 发给 Codex 的 Prompt",
+            "**发给 coding agent 的 Prompt**",
+            "### 发给 coding agent 的 Prompt",
         )
         text = prompt_document(entry)
         self.assertEqual(self.validate(text, parents), [])
@@ -314,7 +314,7 @@ class TaskPromptValidationTests(unittest.TestCase):
             ),
         )
         errors = self.validate(text, parents)
-        self.assertTrue(any("must contain only IDs" in error for error in errors))
+        self.assertTrue(any("must contain only" in error for error in errors))
 
     def test_rejects_vague_engineering_explanation(self) -> None:
         parents = {"1.0": make_parent("1.0", title="Example")}
@@ -323,7 +323,7 @@ class TaskPromptValidationTests(unittest.TestCase):
                 "1.0",
                 "Example",
                 explanation="""- 现在：这部分能力还没有形成完整结果。
-- 这次：Codex 会补齐功能并完成客观验证。
+- 这次：coding agent 会补齐功能并完成客观验证。
 - 完成后：用户会看到可核对的验证结果。""",
             ),
         )
@@ -407,6 +407,53 @@ class TaskPromptValidationTests(unittest.TestCase):
         self.assertEqual(self.validate(text, parents), [])
 
 
+class LocaleNormalizationTests(unittest.TestCase):
+    def test_normalizes_english_parent_fields(self) -> None:
+        text = """- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification`
+- Human Prerequisite: `None`
+- Prerequisite Status: `Not required`
+- Real Integration: `Not required`
+- Source: `FR-001`
+- Goal: Example
+- Boundary / Non-goals: Example
+- Dependencies: `None`
+- Subtasks:
+  - 1.1 Example
+- Files:
+  - `path/a`
+- AI Verification: `T-001`
+"""
+        normalized = validator.normalize_localized_task_text(text)
+        self.assertRegex(normalized, r"- 任务类型：\s*`Formal Task Package`")
+        self.assertRegex(normalized, r"- 验收方式：\s*`AI 验证`")
+        self.assertRegex(normalized, r"- 依赖：\s*`无`")
+
+    def test_normalizes_english_prompt_labels(self) -> None:
+        text = """## Unfinished
+
+❗1.0
+
+## Task 1.0 — Example
+
+- Dependencies: None
+- Conflicts: None
+
+- Now: the user cannot finish the action.
+- This task: the coding agent connects the action.
+- After: the user can finish the action.
+
+**Prompt for coding agent**
+"""
+        normalized = validator.normalize_localized_task_text(text)
+        self.assertIn("## 未完成", normalized)
+        self.assertRegex(normalized, r"- 依赖：\s*无")
+        self.assertRegex(normalized, r"- 冲突：\s*无")
+        self.assertRegex(normalized, r"- 现在：\s*")
+        self.assertIn("**发给 coding agent 的 Prompt**", normalized)
+
+
 class CanonicalTemplateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -417,8 +464,12 @@ class CanonicalTemplateTests(unittest.TestCase):
             encoding="utf-8"
         )
 
+    def test_templates_are_english_source_documents(self) -> None:
+        self.assertIsNone(re.search(r"[\u3400-\u9fff]", self.tasks_template))
+        self.assertIsNone(re.search(r"[\u3400-\u9fff]", self.prompt_template))
+
     def test_tasks_template_does_not_embed_execution_prompts(self) -> None:
-        self.assertNotIn("- 执行 Prompt：", self.tasks_template)
+        self.assertNotIn("- Execution Prompt:", self.tasks_template)
         self.assertNotIn("- Stop Condition：", self.tasks_template)
         self.assertNotIn("## Execution Plan", self.tasks_template)
 
@@ -426,18 +477,18 @@ class CanonicalTemplateTests(unittest.TestCase):
         self.assertNotIn("Next task:", self.prompt_template)
         self.assertNotIn("Execution mode:", self.prompt_template)
         self.assertNotIn("使用方法：", self.prompt_template)
-        self.assertIn("# <项目名或域名> — Task Execution Prompts", self.prompt_template)
-        self.assertIn("## 已完成", self.prompt_template)
-        self.assertIn("## 未完成", self.prompt_template)
-        self.assertIn("❗2.0、3.0", self.prompt_template)
+        self.assertIn("# <Project name or domain> — Task Execution Prompts", self.prompt_template)
+        self.assertIn("## Completed", self.prompt_template)
+        self.assertIn("## Unfinished", self.prompt_template)
+        self.assertIn("❗2.0, 3.0", self.prompt_template)
         self.assertIn("## Task 2.0 —", self.prompt_template)
         self.assertNotIn("当前是否可以开始：", self.prompt_template)
-        self.assertIn("依赖：", self.prompt_template)
-        self.assertIn("- 依赖：2.0", self.prompt_template)
+        self.assertIn("Dependencies:", self.prompt_template)
+        self.assertIn("- Dependencies: 2.0", self.prompt_template)
         self.assertNotIn("### 这项任务是做什么的", self.prompt_template)
-        self.assertNotIn("### 发给 Codex 的 Prompt", self.prompt_template)
-        self.assertIn("**发给 Codex 的 Prompt**", self.prompt_template)
-        self.assertIn("先读取完整任务并检查当前实现", self.prompt_template)
+        self.assertNotIn("### Prompt for coding agent", self.prompt_template)
+        self.assertIn("**Prompt for coding agent**", self.prompt_template)
+        self.assertIn("Read the complete parent task and inspect the current implementation first", self.prompt_template)
 
 
 if __name__ == "__main__":

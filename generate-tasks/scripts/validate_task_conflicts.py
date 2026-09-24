@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 TASK_HEADING = re.compile(r"^## Task (\d+\.0) — .+$", re.M)
-CONFLICT_FIELD = re.compile(r"^- 冲突：[ \t]*(.+?)\s*$", re.M)
+CONFLICT_FIELD = re.compile(r"^- (?:冲突|Conflicts)\s*[:：][ \t]*(.+?)\s*$", re.M | re.I)
 TASK_ID = re.compile(r"\d+\.0")
 
 
@@ -25,13 +25,17 @@ def task_blocks(text: str) -> dict[str, str]:
 
 def parse_conflicts(value: str) -> tuple[list[str], str | None]:
     value = value.strip().strip("`").strip()
-    if value == "无":
+    if value.casefold() == "none" or value == "无":
         return [], None
     if not value:
-        return [], "must be '无' or Task IDs separated by '、'"
-    tokens = value.split("、")
+        return [], "must be None/无 or a list of Task IDs"
+    tokens = [
+        token.strip()
+        for token in re.split(r"\s*(?:、|,)\s*", value)
+        if token.strip()
+    ]
     if any(not TASK_ID.fullmatch(token) for token in tokens):
-        return [], "must contain only Task IDs separated by '、'"
+        return [], "must contain only Task IDs separated by commas or 、"
     if len(tokens) != len(set(tokens)):
         return [], "must not repeat Task IDs"
     return tokens, None
@@ -46,7 +50,7 @@ def validate(text: str) -> list[str]:
         fields = CONFLICT_FIELD.findall(block)
         if len(fields) != 1:
             errors.append(
-                f"Task {task_id} must contain exactly one '- 冲突：...' metadata line."
+                f"Task {task_id} must contain exactly one Conflicts/冲突 metadata line."
             )
             continue
 

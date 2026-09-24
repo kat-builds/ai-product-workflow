@@ -1,133 +1,133 @@
-# Multi-Agent Execution 规则
+# Multi-Agent Execution Rules
 
-更新日期：2026-08-21
+Updated: 2026-08-21
 
-> 目标：在正确性和风险可控的前提下缩短 time-to-correct-completion。本文件只规定如何在 `docs/project/task-prompt.md` 表达并行 batches、Main Manager、Worker Prompt 和交接；canonical `docs/project/tasks.md` 始终只定义任务，不保存这些运行时调度信息。
+> Goal: reduce time-to-correct-completion without sacrificing correctness or increasing avoidable coordination risk. This file defines how `docs/project/task-prompt.md` may represent parallel batches, a Main Manager, Worker prompts, and handoff. Canonical `docs/project/tasks.md` always defines the task contract and must not store runtime scheduling details.
 
-## 目录
+## Contents
 
-1. 适用范围与启用判断
-2. Dependency、critical path 与 batches
-3. Conflict Surface Analysis
-4. Main Manager 与 Worker 隔离
-5. `task-prompt.md` 结构
-6. 每个 Task 的 Worker Prompt
-7. Model / reasoning level 与资源
-8. Worker ownership、merge 与 stale context
-9. `🔴` 用户介入
-10. Self-Check
+1. Scope and enablement
+2. Dependencies, critical path, and batches
+3. Conflict surface analysis
+4. Main Manager and Worker isolation
+5. `task-prompt.md` structure
+6. Worker prompt contract
+7. Reasoning level and resources
+8. Ownership, merge, and stale context
+9. User involvement
+10. Self-check
 
-## 0. 术语与文档边界
+## 0. Terms and document boundaries
 
-- `Worker`：用户按 `task-prompt.md` 启动的独立 Codex Worktree chat/session；每个 Worker 使用独立 branch 和 worktree，一次只执行一个 parent Task Package。
-- `Main Manager`：唯一 Integration Owner，负责 `main`、review、merge、integration validation、canonical task status 和后续调度。
-- `Subagent`：同一 Codex 会话内部由 parent 创建和管理的子 Agent，不等同于独立 Worker；不得混用两者。
+- **Worker**: an independent coding-agent worker/session started from `task-prompt.md`. Each Worker uses one unique non-`main` branch and, when supported or needed, an isolated worktree or equivalent workspace. A Worker handles one parent Task Package at a time.
+- **Main Manager**: the only Integration Owner. It owns `main`, review, merge decisions, integration validation, canonical task status, and subsequent scheduling.
+- **Subagent**: an agent created and managed inside one parent-agent session. It is not the same as an independent Worker and the two concepts must not be mixed.
 
-文档职责：
+Document roles:
 
-- `tasks.md`：唯一 task source of truth。不得包含 Execution Plan、Worker assignment、branch、Launch/Handoff Prompt 或 Stop Condition。
-- `task-prompt.md`：当前执行快照。可以包含 batches、Main Manager 启动 Prompt、每个未完成 Task 的 Worker metadata 和可复制 Prompt；不得重写 task contract，不生成顶部执行模式或使用说明。
+- `tasks.md`: canonical task source of truth. It must not contain an Execution Plan, Worker assignment, branch/worktree metadata, launch/handoff prompts, or Stop Conditions.
+- `task-prompt.md`: current execution snapshot. It may contain batches, a Main Manager kickoff prompt, Worker metadata, and copyable prompts for unfinished tasks. It must not redefine the task contract.
 
-生成 Multi-Agent 文档不等于启动 Worker/Subagent、创建 branch/worktree、merge 或 commit。
+Generating a Multi-Agent plan does not itself start Workers/Subagents, create branches/worktrees, merge, or commit.
 
-## 1. 适用范围与启用判断
+## 1. Scope and enablement
 
-完成 parent 拆分、direct dependency graph 和 conflict surface 后再判断。优化目标是更快达到正确完成，不是 Worker 数量最多。
+Decide whether Multi-Agent execution is worthwhile only after parent-task boundaries, the direct dependency graph, and conflict surfaces are known. Optimize for faster correct completion, not for the largest Worker count.
 
-综合评估：
+Consider:
 
-- runnable tasks、critical path 和预计耗时；
-- file/module/interface/schema/业务语义的 conflict surface；
-- session startup、context loading、branch/worktree、协调、review、merge 和 integration 成本；
-- CPU、RAM、disk/I/O、browser、build、test、typecheck、dev server 和当前重任务；
-- stale context、返工概率及其对 critical path 的影响。
+- runnable independent tasks;
+- critical-path benefit and expected duration;
+- file/module/interface/schema/business-semantic conflict surface;
+- session startup, context loading, branch/worktree, coordination, review, merge, and integration cost;
+- CPU, RAM, disk/I/O, browser, build, test, typecheck, dev-server, and other shared-resource contention;
+- stale-context and rework risk.
 
-只有并行时间收益明显高于这些成本且风险可控时，才在 `task-prompt.md` 生成 Main Manager、Worker 和 batch 内容。否则使用普通线性 Task 列表，不得生成 Worker 或 batch 空壳。
+Generate Main Manager / Worker / batch content only when the expected parallel time benefit clearly exceeds these costs and the write boundaries can be isolated safely. Otherwise use the normal Single-Agent linear task sequence and do not emit empty Worker or batch scaffolding.
 
-## 2. Dependency、critical path 与 batches
+## 2. Dependencies, critical path, and batches
 
-一个 Task 进入某 batch 前必须满足：
+A Task may enter a batch only when:
 
-1. direct dependencies 已 `✅ Approved`，或 Main Manager 根据 repository evidence 确认所需 contract 已锁定；首次静态生成不得从自由文字猜测 contract 已锁定；
-2. 不依赖未解除的产品决定、用户前置或外部 blocker；
-3. 与同批 Task 的写入边界可可靠隔离；
-4. 共享资源足够，预计并发不会使总时间变长；
-5. 实际时间收益高于启动、协调、merge 和验证成本。
+1. its direct dependencies are `✅ Approved`, or the Main Manager has verified from repository evidence that the required contract is already locked;
+2. no unresolved product decision, human prerequisite, or external blocker prevents the work;
+3. its write boundary can be isolated safely from other tasks in the same batch;
+4. shared resources are sufficient and concurrency is unlikely to make total time worse;
+5. the expected time saving exceeds startup, coordination, merge, and validation cost.
 
-调度优先级：
+Scheduling priority:
 
-1. 先解除 blocking prerequisite；
-2. 保持 critical path 持续推进；
-3. 同批启动所有安全且有明显收益的独立任务；
-4. 同等条件下先启动预计耗时较长或能解锁更多下游的任务；
-5. 局部 blocker 只阻塞依赖它的 Task。
+1. unblock real prerequisites first;
+2. keep the critical path moving;
+3. start safe independent work in parallel only when there is clear benefit;
+4. when otherwise equal, prefer work that is longer or unlocks more downstream tasks;
+5. keep local blockers local.
 
-Task ID 不是执行顺序。同批在文件中使用稳定展示顺序，但必须标明可以并行，不能把展示顺序描述为 dependency。
+Task ID is not execution order. Tasks in the same batch may be displayed in a stable order, but display order must not be described as a dependency.
 
-不得为了增加 Worker 数强拆连贯 parent。Waiting/Blocked Task 仍保留自己的 `## Task X.X` 小节并按预计 unlock 位置排列，但 Prompt 必须写明启动条件；不得让用户误以为当前已 runnable。
+Do not split a coherent parent merely to create more Workers. Waiting/Blocked tasks keep their own `## Task X.X` section at the expected unlock position, but the prompt must state the unlock condition and must not imply that the task is runnable now.
 
 ## 3. Conflict Surface Analysis
 
-逐项检查：
+Check each planned task for overlap in:
 
-- database schema、migrations、seed、fixtures；
-- auth、authorization、ownership、session；
-- payment、credits、webhook、entitlement；
-- package/dependencies、lockfile；
-- shared config、environment、deployment；
-- shared types、interfaces、API contracts、generated clients；
-- routes、layouts、navigation、middleware；
-- global styles、design tokens、shared UI primitives；
-- messages、i18n namespaces、共享文案；
-- shared core modules、central registries、cross-cutting utilities；
-- `tasks.md`、`task-prompt.md` 和其他共享执行文档；
-- 多个 Task 预计同时修改的实际文件。
+- database schema, migrations, seeds, and fixtures;
+- auth, authorization, ownership, and session contracts;
+- payment, credits, webhook, entitlement, and billing state;
+- package/dependency and lockfile changes;
+- shared config, environment, and deployment files;
+- shared types, interfaces, API contracts, registries, and generated clients;
+- routes, layouts, navigation, middleware, and global styles;
+- design tokens and shared UI primitives;
+- localization/content namespaces and shared messages;
+- shared core modules, central registries, and cross-cutting utilities;
+- any actual file expected to be edited by more than one task.
 
-对每个高冲突区域指定唯一 owner，其他 Worker 标为 read-only/prohibited，并写清 coordination point。无法可靠隔离时降低并发、交给同一 Worker 或串行。不同 worktree 不能自动解决 semantic/interface/integration conflict。
+Give every high-conflict surface one owner. Other Workers must treat it as read-only/prohibited and use a clear coordination point. If boundaries cannot be isolated reliably, reduce concurrency, assign the work to one Worker, or serialize it. Separate worktrees do not solve semantic, interface, or integration conflicts by themselves.
 
-## 4. Main Manager 与 Worker 隔离
+## 4. Main Manager and Worker isolation
 
 ### 4.1 Main Manager
 
-唯一 Main Manager / Integration Owner 负责：
+The unique Main Manager / Integration Owner:
 
-- 维护 dependency graph 和 critical path；
-- 根据真实 repository/Git 状态决定 Worker 调度；
-- 管理 `main`、merge timing/order 和跨任务 conflict；
-- review Worker diff、boundary 和 validation evidence；
-- 运行必要 integration/final validation；
-- merge 后更新 canonical `tasks.md` 状态，并同步 `task-prompt.md` 的已完成时间顺序、剩余 Task 和 batches。
+- maintains the dependency graph and critical path;
+- decides Worker scheduling from real repository/Git state;
+- owns `main`, merge timing/order, and cross-task conflict resolution;
+- reviews Worker diffs, boundaries, and validation evidence;
+- runs necessary integration/final validation;
+- after merge, updates canonical `tasks.md` state and regenerates `task-prompt.md`.
 
-Main Manager 只承担整合职责，不抢占可交给 Worker 的普通开发任务。
+The Main Manager should focus on integration rather than taking ordinary implementation work that can safely remain with a Worker.
 
 ### 4.2 Worker
 
-每个 Worker：
+Each Worker:
 
-- 使用从 latest `main` 创建的独立 worktree 和唯一非 `main` branch；
-- 只处理分配的一个 Task Package 和 allowed files/modules；
-- 不操作、切换、修改、merge 或 push `main`；
-- 不整合其他 Worker branch；
-- 不修改 `docs/project/tasks.md` 或 `docs/project/task-prompt.md`；
-- dependency 假设失效、需要越界或 shared contract 冲突时停止并报告 Main Manager；
-- 完成后提交 commit 和完整 Completion Report，不自行 merge。
+- uses a unique non-`main` branch from the latest confirmed `main`; use an isolated worktree or equivalent workspace when supported or required;
+- handles only its assigned Task Package and allowed files/modules;
+- does not operate on, switch to, modify, merge, or push `main`;
+- does not integrate another Worker branch;
+- does not modify `docs/project/tasks.md` or `docs/project/task-prompt.md`;
+- stops and reports to the Main Manager if a dependency assumption fails, a boundary must be crossed, or a shared contract conflicts;
+- creates its own task-scoped commit and complete Completion Report, but does not merge.
 
-## 5. `task-prompt.md` 结构
+## 5. `task-prompt.md` structure
 
-文档顺序：
+Document order:
 
-1. 包含已确认项目名或域名的一级标题及文档角色说明；
-2. 若存在 Approved parent，按实际完成时间排列的 `## 已完成`；
-3. 若存在未完成 parent，与下方 Task 顺序一致并用 `❗` 标出 critical path Task 的 `## 未完成`；
-4. 一份完整 Main Manager Kickoff `text` Prompt；
-5. 按 batch 顺序排列的所有未完成 `## Task X.X — <标题>`。
+1. H1 with the confirmed project name or domain plus the document-role note;
+2. `## Completed` when Approved parents exist, in real completion order;
+3. `## Unfinished` when unfinished parents exist, matching the Task section order and marking current critical-path tasks with `❗`;
+4. one complete Main Manager Kickoff `text` prompt;
+5. every unfinished `## Task X.X — <title>` section in batch order.
 
-不输出 `Next task`、`Execution mode`、rationale 或使用方法。首个 batch 中稳定展示的第一项放在最前，batch 元数据说明同批还有哪些 Task 可并行。没有未完成 parent 时不输出 kickoff 或 Task 小节。
+Do not output `Next task`, `Execution mode`, rationale text, or top-level usage instructions. When no unfinished parents remain, omit the kickoff and all Task sections.
 
-每个 Task 标题下、固定的两个小节前，可以增加以下短元数据：
+A Task may include short scheduling metadata before its plain-language explanation:
 
 ```md
-- 依赖：无
+- Dependencies: None
 Execution batch: `Batch 1` — may run in parallel with Task 3.0
 Worker: `Worker A`
 Branch: `task/1-0-...`
@@ -135,90 +135,95 @@ Allowed Files / Modules: `path/a`, `path/b`
 Focused Validation: `T-001`
 ```
 
-只有真实高冲突例外时增加 `Do Not Touch`。默认 reasoning level 不重复写。元数据是当前调度快照，不得写入 `tasks.md`。
+Add `Do Not Touch` only for a real high-conflict exception. Do not repeat the default reasoning level. This metadata is a current scheduling snapshot and must not be copied into `tasks.md`.
 
-Main Manager Kickoff Prompt 必须要求：
+The Main Manager Kickoff Prompt must require the manager to:
 
-- 读取 canonical `tasks.md` 和派生 `task-prompt.md`；
-- 从 repository/Git 实际状态核对 `main`、working tree、dependencies、资源、batches、branch 和 boundary，不把计划状态当事实；
-- kickoff 只报告用户现在应创建的 Worktree chats 和可启动 Workers，不创建 Worker/branch/worktree，不开始实现；
-- 后续根据 branch、commit、diff、logs 和 validation evidence review/merge；
-- merge 后更新 `tasks.md` 和 `task-prompt.md`，再返回下一批完整 Task Prompt。
+- read canonical `tasks.md` and derived `task-prompt.md`;
+- verify `main`, working tree, dependencies, resources, batches, branches, and boundaries from actual repository/Git state rather than trusting planning text as fact;
+- report which independent Worker sessions/workspaces should be started now, without creating Workers, branches, worktrees, or beginning implementation;
+- later review/merge using branch, commit, diff, logs, and validation evidence;
+- after merge, update `tasks.md` and regenerate `task-prompt.md` before returning the next runnable prompts.
 
-## 6. 每个 Task 的 Worker Prompt
+## 6. Worker prompt contract
 
-每个未完成 parent 仍严格使用：
+Every unfinished parent keeps this shape:
 
 ````md
-## Task X.X — <标题>
+## Task X.X — <title>
 
-- 依赖：无，或只列 Task / blocker ID
+- Dependencies: None, or only Task / blocker IDs
 
-约 3–6 行，直接以“现在 / 这次 / 完成后”说明真实用户问题、改动和结果。
+- Now: <real user-facing problem>
+- This task: <what this task changes>
+- After: <visible result>
 
-**发给 Codex 的 Prompt**
+**Prompt for coding agent**
 
 ```text
-完整 Worker Prompt
+<complete Worker prompt>
 ```
 ````
 
-Worker Prompt 在通用 parent Prompt 要求之外，必须包含：
+In addition to the normal parent-task contract, a Worker prompt must include:
 
-- Worker、Task Package、branch、direct dependencies、allowed files/modules、focused validation；
-- 仅在适用时包含 Do Not Touch 和偏离默认值的 reasoning level；
-- 确认独立 worktree/branch，并读取适用 `AGENTS.md`、canonical parent 和必要 PRD 内容；
-- 已正确实现的部分只验证，不重复修改；
-- 只处理当前 Task，不操作 main，不修改两份任务文档；
-- boundary/dependency 失效时报告 Main Manager；
-- 创建符合仓库规则且以 Task ID 开头的 commit，不 merge；
-- Completion Report 包含 Worker、Task、branch、commit hash、changed files/diff、dependency 假设、boundary、validation 命令与结果、风险/blocker 和建议 canonical 状态。
+- Worker, Task Package, branch, direct dependencies, allowed files/modules, and focused validation;
+- `Do Not Touch` only when needed;
+- reasoning level only when the execution environment supports it and this task needs a non-default level;
+- confirmation of the isolated branch/workspace and instructions to read applicable project/agent instructions, the canonical parent task, and only the necessary PRD context;
+- instruction to verify already-correct implementation rather than rewriting it;
+- instruction to handle only the assigned Task, avoid `main`, and leave both task documents untouched;
+- instruction to stop and report to the Main Manager if the boundary or dependency assumption becomes invalid;
+- instruction to create a repository-compliant commit whose subject begins with the Task ID, without merging;
+- a Completion Report containing Worker, Task, branch, commit hash, changed files/diff, dependency assumptions, boundary, validation commands/results, risks/blockers, and recommended canonical status.
 
-Worker 不负责同步 `task-prompt.md`；该同步由 Main Manager merge 后完成。因此 Multi-Agent Worker Prompt 不要求 Worker 更新任务状态文件。
+A Worker never synchronizes `task-prompt.md`; the Main Manager does that after merge.
 
-Waiting/Blocked Task 的 Prompt 必须首先核对 unlock condition。若仍未满足，只报告 blocker，不创建 branch、不开始实现、不 commit。
+For a Waiting/Blocked task, the prompt must check the unlock condition first. If it is still unresolved, report the blocker without creating a branch, implementing, or committing.
 
-## 7. Model / reasoning level 与资源
+## 7. Reasoning level and resources
 
-- Main Manager：至少 `High`。
-- Worker 默认：`Middle`。
-- `Low`：只用于机械、低风险、边界清晰且易客观验证的任务。
-- `High`：用于复杂、高风险、critical-path、跨模块、auth、payment、migration、debugging 或 integration。
-- 不确定时使用 `Middle`；不得指定具体模型名称。
+Record a reasoning/effort level only when the execution environment actually supports one.
 
-Worker 只运行 focused validation。full build、full test suite、Playwright/browser/E2E 和大型 integration tests 由 Main Manager 按资源限流。不要让多个 Worker 同时争用 browser、port 或大型 build/test。
+- Main Manager: prefer `High`.
+- Worker default: `Medium`.
+- `Low`: mechanical, low-risk, tightly bounded, easy-to-verify work only.
+- `High`: complex or high-risk work, critical-path work, cross-module changes, auth, payment, migration, debugging, or integration.
+- When uncertain, use `Medium`. Do not name a specific model.
 
-## 8. Worker ownership、merge 与 stale context
+Workers run focused validation. The Main Manager rate-limits full builds, full suites, Playwright/browser/E2E work, and large integration tests so Workers do not fight over browser, port, CPU, memory, or other shared resources.
 
-Task 实质开始后默认由原 Worker持续完成。只有 blocked、不收敛、假设失效、latest main 使实现过时，或预计返工成本明显高于重新规划时才重新分配。
+## 8. Ownership, merge, and stale context
 
-Main Manager merge 前必须：
+Once a Worker has materially started a Task, keep that Task with the same Worker unless it is blocked, failing to converge, based on an invalid assumption, made stale by a newer `main`, or clearly cheaper to replan than continue.
 
-1. review diff、commit 和 changed files；
-2. 核对 Task boundary、allowed files、Do Not Touch 和 dependency 假设；
-3. 核对 validation evidence；
-4. 按风险追加 targeted review/validation；
-5. 根据在途 branches、shared files、dependency 和 critical path 决定 merge timing/order；
-6. merge 后运行适当 integration validation，再更新两份任务文档。
+Before merging, the Main Manager must:
 
-不要机械要求每个 branch 每次都 rebase，也不要因 Worker 完成就自动 merge。
+1. review the diff, commit, and changed files;
+2. verify Task boundary, allowed files, Do Not Touch, and dependency assumptions;
+3. review validation evidence;
+4. add targeted review/validation when risk requires it;
+5. choose merge timing/order from in-flight branches, shared files, dependencies, and critical path;
+6. run appropriate integration validation after merge, then update both task documents.
 
-## 9. `🔴` 用户介入
+Do not mechanically require every branch to rebase, and do not merge merely because a Worker finished.
 
-- parent 人工前置、`G-*`、Confirmation Task、Blocked Task 和 User Action Guide 仍以 `tasks.md` 为 canonical source。
-- `task-prompt.md` 只简短解释 blocker 对启动顺序的影响，不复制完整用户步骤。
-- `P1` 阻塞当前/近期 critical path，`P2` 是后续确定需要，`P3` 不影响主要进度。
-- 不得记录真实 secret、credential 或 verification code。
+## 9. User involvement
+
+- Parent prerequisites, `G-*` gates, Confirmation Tasks, Blocked Tasks, and User Action Guides remain canonical in `tasks.md`.
+- `task-prompt.md` only explains how a blocker affects execution order; it does not duplicate the full user-action procedure.
+- `P1` blocks the current or near-term critical path, `P2` is required later, and `P3` does not block the main path.
+- Never record a real secret, credential, or verification code.
 
 ## 10. Self-Check
 
-1. 并行净收益与推荐并发数有 dependency、conflict 和资源依据；未为展示并行而强拆 Task。
-2. 每个 batch 只含 runnable 或明确 contract-locked Task；Waiting/Blocked 有真实 unlock condition。
-3. 唯一 Main Manager、merge gate、branch/worktree、file owner 和 shared contract 清楚。
-4. `tasks.md` 没有任何 Execution Plan、Worker metadata、Prompt 或 Stop Condition。
-5. `task-prompt.md` 的项目名或域名、已完成时间顺序、未完成汇总与 critical path 标记、batches、未完成 parent 和依赖与 canonical 状态一致，且没有顶部调度提示。
-6. 每个 Task 保留简短依赖、通俗说明和粗体 Prompt 标识；通俗说明使用真实用户动作与结果，不复制技术合同或空泛工程话，Worker Prompt 不复制整个 PRD/Task Package。
-7. 每个 Worker Prompt 包含唯一 Task/branch、边界、focused validation、main prohibition、commit 和 Completion Report；Worker 不修改两份任务文档。
-8. Main Manager kickoff 完整可复制，并明确由用户创建 Worktree chats；生成 Skill 本身不启动 Worker/Subagent。
-9. Reasoning 与重型验证按资源调度，不指定具体模型，不机械 rebase/merge。
-10. genuine user blockers 只在 `tasks.md` 建模一次，`task-prompt.md` 仅引用且不泄露 secret。
+1. Parallelism has a real dependency/conflict/resource basis; no Task was split merely to increase Worker count.
+2. Every batch contains only runnable or explicitly contract-locked work; Waiting/Blocked tasks have real unlock conditions.
+3. There is one Main Manager, one merge gate, and clear branch/workspace/file ownership.
+4. `tasks.md` contains no Execution Plan, Worker metadata, Prompt, or Stop Condition.
+5. `task-prompt.md` project name/domain, completion order, unfinished summary, critical-path markers, batches, parent tasks, and dependencies match canonical state.
+6. Every Task keeps short dependency metadata, a concrete plain-language explanation, and one copyable prompt without duplicating the full PRD/Task Package.
+7. Every Worker prompt names one Task/branch, boundary, focused validation, `main` prohibition, commit requirement, and Completion Report; Workers do not modify the task documents.
+8. The Main Manager kickoff is complete and copyable and makes clear that the user or supported execution environment starts independent Worker sessions; this Skill does not launch Workers/Subagents itself.
+9. Reasoning levels and heavy validation respect available resources; no specific model is required.
+10. Genuine user blockers are modeled once in `tasks.md`; `task-prompt.md` only references them and never exposes secrets.

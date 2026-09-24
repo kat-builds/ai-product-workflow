@@ -1,6 +1,7 @@
 # {{PROJECT_NAME}} — Design System
 
 Last updated: YYYY-MM-DD
+Document language: en
 
 > This document is the canonical source of truth for recurring visual and interaction-system decisions. Product behavior and business rules remain in the PRD. Repository code is implementation evidence; isolated legacy styles do not override this document.
 
@@ -10,7 +11,7 @@ Last updated: YYYY-MM-DD
 
 - **PRD:** {{PRD_PATH_OR_RULE}}
 - **Design System:** this document
-- **AI/project operating rules:** {{AGENTS_PATH_OR_NONE}}
+- **AI/project operating rules:** {{PROJECT_INSTRUCTION_PATH_OR_NONE}}
 - **Theme/token source:** {{TOKEN_SOURCE}}
 - **Shared UI primitive source:** {{SHARED_UI_SOURCE}}
 

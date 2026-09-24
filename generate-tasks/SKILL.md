@@ -20,11 +20,11 @@ Do not modify the PRD, business code, tests, migrations, dependencies, configura
 
 If the user requests review/audit only, remain read-only unless they explicitly request fixes.
 
-When invoked by `$create-prd`, use only the already validated PRD version and do not reopen or expand product scope.
+When invoked by the `create-prd` Skill, use only the already validated PRD version and do not reopen or expand product scope.
 
 ## Workflow
 
-1. Follow the applicable `AGENTS.md` and the user's current request.
+1. Follow the applicable project/agent instructions and the user's current request.
 2. Read `docs/project/PRD.md` completely. Treat its Current Scope, business rules, stable IDs, Non-Goals, and blockers as authoritative.
 3. If `docs/project/tasks.md` already exists, read it and `docs/project/task-prompt.md`; default to an incremental update unless the user explicitly requests a rebuild.
 4. Read `references/core-rules.md`.
@@ -33,7 +33,7 @@ When invoked by `$create-prd`, use only the already validated PRD version and do
 7. Read `references/verification-rules.md`; define focused AI verification, any required human review, and real-integration status. Follow applicable project UI/E2E policy rather than automatically planning browser or E2E testing.
 8. If any task needs user action, decision, approval, login, secret/config setup, test access, or another human prerequisite, read `references/user-action-rules.md`.
 9. Decide Single-Agent vs Multi-Agent only after the dependency/conflict analysis. If Multi-Agent has clear net benefit, read `references/multi-agent-execution-rules.md` completely; otherwise do not load or emit Multi-Agent details.
-10. Read `assets/tasks-template.md` and `assets/task-prompt-template.md`. Build canonical `tasks.md` first, then derive `task-prompt.md` from the final task state and planning analysis.
+10. Read `assets/tasks-template.md` and `assets/task-prompt-template.md` as the canonical English structures. Apply the selected locale rules from the Output language section. Build canonical `tasks.md` first, then derive `task-prompt.md` from the final task state and planning analysis.
 11. Run:
 
     ```bash
@@ -44,6 +44,16 @@ When invoked by `$create-prd`, use only the already validated PRD version and do
 12. Fix all structural/conflict errors and review warnings that indicate real defects.
 13. Perform the semantic review the validators cannot do: PRD coverage, scope fidelity, real paths/commands, sensible task boundaries, dependency/critical-path correctness, conflict meaning, verification appropriateness, and user-facing Prompt explanations.
 14. If User Actions were introduced or changed, apply `references/user-action-rules.md` and report whether reusable guides are Available, Missing, or Not needed. Do not create a missing central guide without explicit user approval.
+
+## Output language
+
+Skill source documents and canonical assets are written in English.
+
+Generate `tasks.md` and `task-prompt.md` in the same document language as the validated PRD unless the user explicitly requests another language. Prefer the PRD's `Document language` value when present.
+
+Use `locales/<language>.json` when that locale exists so validator-sensitive headings, field labels, and prompt labels stay consistent. If a requested locale does not exist, keep validator-sensitive structural labels in English and write explanatory content in the requested language.
+
+During incremental updates, preserve the existing Task-document language unless the PRD language or an explicit user/project instruction changes it.
 
 ## Planning principles
 
@@ -60,7 +70,7 @@ When invoked by `$create-prd`, use only the already validated PRD version and do
 
 ## Conditional project references
 
-Read project playbooks/modules/design references only when the PRD or applicable `AGENTS.md` makes them relevant to the planned work.
+Read project playbooks/modules/design references only when the PRD or applicable project/agent instructions make them relevant to the planned work.
 
 Their existence may constrain reuse or implementation, but never makes a capability Current Scope.
 
