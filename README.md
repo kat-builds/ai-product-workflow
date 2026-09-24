@@ -88,77 +88,6 @@ The PRD is the product source of truth. The Design System is there when the work
 
 If a new UI pattern turns out to be worth reusing, I can update the Design System again later. I do not use it as a last-minute "make everything pretty" pass.
 
-## What Gets Added to the Project
-
-These Skills do not need a special code structure.
-
-They mainly work with a few files under `docs/project/`:
-
-```text
-docs/
-└── project/
-    ├── PRD.md
-    ├── design/
-    │   └── DESIGN_SYSTEM.md
-    ├── tasks.md
-    └── task-prompt.md
-```
-
-- `PRD.md` keeps the product scope, behavior, rules, and decisions.
-- `DESIGN_SYSTEM.md` keeps the recurring UI and interaction rules.
-- `tasks.md` keeps the full implementation plan.
-- `task-prompt.md` is the working to-do/done list I use with AI.
-
-Your project can have any other docs or code structure around these. The Skills do not require a specific framework, folder structure, or tech stack.
-
-## Quick Start
-
-Once the Skills are available to your AI coding tool, I usually use them like this.
-
-Use your tool's normal Skill invocation syntax.
-
-### Start or update the PRD
-
-**Skill:** `create-prd`
-
-```text
-I want to add...
-Please check the current project and update the PRD first.
-```
-
-### Check the UI rules when the change involves UI
-
-**Skill:** `ui-design-system`
-
-```text
-Check this change against the current Design System and update it if needed.
-```
-
-If the project does not have a Design System yet, the Skill can initialize one from the current UI patterns and shared components.
-
-### Create the implementation plan
-
-**Skill:** `generate-tasks`
-
-```text
-Create the tasks from the current PRD.
-```
-
-After that, I normally work from `task-prompt.md` and copy the next prompt when I am ready to continue.
-
-## A Short Example
-
-Say I want to add a user credit balance with automatic recharge.
-
-I would use the Skills like this:
-
-1. `create-prd` defines how the balance, threshold, opt-in, payment rules, error states, and scope should work.
-2. Because the feature has UI, `ui-design-system` checks the balance indicator and settings UI against the project's existing patterns.
-3. `generate-tasks` turns the approved PRD, repository facts, and relevant UI rules into implementation tasks with dependencies, conflicts, files, and verification.
-4. `task-prompt.md` becomes the working list I use to see what is done and copy the next prompt.
-
-The exact implementation can change from project to project. The point is that the product decisions, UI rules, and execution plan are not all being reinvented in the same chat.
-
 ## Installation
 
 For the full workflow, install all three Skills and use the ones you need for each change.
@@ -236,6 +165,280 @@ The Skills can also be used separately when the required input already exists:
 For current host-specific behavior, see the official documentation for [OpenAI Skills](https://developers.openai.com/codex/skills), [Gemini CLI Agent Skills](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/skills.md), and [Claude Code Skills](https://code.claude.com/docs/en/skills).
 
 </details>
+
+## What Gets Added to the Project
+
+These Skills do not need a special code structure.
+
+They mainly work with a few files under `docs/project/`:
+
+```text
+docs/
+└── project/
+    ├── PRD.md
+    ├── design/
+    │   └── DESIGN_SYSTEM.md
+    ├── tasks.md
+    └── task-prompt.md
+```
+
+- `PRD.md` keeps the product scope, behavior, rules, and decisions.
+- `DESIGN_SYSTEM.md` keeps the recurring UI and interaction rules.
+- `tasks.md` keeps the full implementation plan.
+- `task-prompt.md` is the working to-do/done list I use with AI.
+
+Your project can have any other docs or code structure around these. The Skills do not require a specific framework, folder structure, or tech stack.
+
+## Quick Start
+
+Once the Skills are available to your AI coding tool, I usually use them like this.
+
+Use your tool's normal Skill invocation syntax.
+
+### Start or update the PRD
+
+**Skill:** `create-prd`
+
+```text
+I want to add...
+Please check the current project and update the PRD first.
+```
+
+### Check the UI rules when the change involves UI
+
+**Skill:** `ui-design-system`
+
+```text
+Check this change against the current Design System and update it if needed.
+```
+
+If the project does not have a Design System yet, the Skill can initialize one from the current UI patterns and shared components.
+
+### Create the implementation plan
+
+**Skill:** `generate-tasks`
+
+```text
+Create the tasks from the current PRD.
+```
+
+After that, I normally work from `task-prompt.md` and copy the next prompt when I am ready to continue.
+
+## Example
+
+Say I want to add a user credit balance with automatic recharge when the balance gets low.
+
+### 1. Start with `create-prd`
+
+I can give the Skill a rough request:
+
+```text
+Add a user credit balance with automatic recharge when the balance drops below a threshold.
+```
+
+The PRD turns that into something much more concrete: what is in scope, how the user opts in, when recharge happens, what the user sees, what happens when payment fails, and what should not change.
+
+<details>
+<summary><strong>👉 See a small PRD example</strong></summary>
+
+```markdown
+# Credit Balance & Auto-Recharge Product Requirements Document (PRD)
+
+- Status: Confirmed
+- Document language: en
+
+## 3. Project Type & Scope
+
+### Current Scope
+
+- `FR-001` — Show the user's current credit balance.
+- `FR-002` — Let the user opt in to automatic recharge and choose a threshold.
+- `FR-003` — Recharge through the existing payment provider when the balance drops below the confirmed threshold.
+
+### Existing Baseline
+
+- `PAGE-001` — Keep the current billing page and existing payment method flow.
+
+### Possible Later
+
+- Multiple recharge packs.
+- Balance alerts by email.
+
+## 6. Interaction Flows
+
+### `FLOW-001` — Enable automatic recharge
+
+1. The user opens billing settings.
+2. The user enables automatic recharge and chooses a threshold.
+3. The system shows the recharge amount and payment method before saving.
+4. On success, the setting is saved and shown as active.
+5. On failure, the setting is not enabled and the user sees what needs attention.
+
+## 7. Functional Requirements
+
+### `FR-002` — Enable automatic recharge
+
+- Trigger: the user enables auto-recharge in billing settings.
+- System behavior: save the confirmed threshold and recharge preference.
+- User-visible result: the billing page shows auto-recharge as active and displays the threshold.
+- Boundaries: do not change the user's payment method without explicit action.
+- Acceptance criteria: after saving, the setting persists and is shown correctly when the user returns.
+```
+
+</details>
+
+### 2. Check the UI with `ui-design-system`
+
+Because this feature has UI, I check the Design System before creating the tasks.
+
+The goal is not to redesign billing. It is to make the new balance and auto-recharge controls fit the product that already exists.
+
+```text
+Check the credit balance and auto-recharge UI against the current Design System and update the Design System only if a reusable rule is missing.
+```
+
+<details>
+<summary><strong>👉 See a small Design System example</strong></summary>
+
+```markdown
+## 5. Component Patterns
+
+### 5.1 Buttons & actions
+
+- Billing settings use the existing primary and secondary button hierarchy.
+- Destructive payment actions must not share the primary-action styling.
+
+### 5.3 Cards, rows & item boundaries
+
+- Balance status and recharge settings use the existing settings-row pattern.
+- Do not introduce a second card style just for billing.
+
+### 5.9 Status, feedback & notifications
+
+- Normal balance state uses the standard informational treatment.
+- Low balance uses the existing warning treatment.
+- Payment failure uses the existing destructive/error treatment.
+
+## 6. Interaction Rules
+
+- Auto-recharge stays off until the user explicitly confirms it.
+- Success and failure feedback stay inside the existing billing feedback pattern.
+```
+
+</details>
+
+### 3. Create the implementation plan with `generate-tasks`
+
+Now the product rules and relevant UI rules are clear, so I generate the implementation plan.
+
+```text
+Create the tasks from the current PRD.
+```
+
+`tasks.md` keeps the full plan: requirement traceability, dependencies, blockers, files, task boundaries, user prerequisites, and verification.
+
+<details>
+<summary><strong>👉 See a small tasks.md example</strong></summary>
+
+```markdown
+# Implementation Tasks
+
+## Task Packages
+
+### [x] 1.0 Add credit balance and recharge preference data
+
+- Task Type: `Formal Task Package`
+- Status: `✅ Approved`
+- Acceptance: `AI verification`
+- Source: `FR-001`, `FR-002`
+- Dependencies: `None`
+- Files:
+  - `src/.../billing-data`
+- AI Verification: `T-001`
+
+### [ ] 2.0 Connect automatic recharge to the payment flow
+
+- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification`
+- Human Prerequisite: `Required`
+- Prerequisite Status: `Pending`
+- Real Integration: `Pending`
+- Source: `FR-003`
+- Dependencies: `1.0`
+- Files:
+  - `src/.../billing-service`
+  - `src/.../payment-webhook`
+- AI Verification: `T-002`
+
+### [ ] 3.0 Add balance and auto-recharge settings UI
+
+- Task Type: `Formal Task Package`
+- Status: `⬜ Pending`
+- Acceptance: `AI verification then human review`
+- Source: `FR-001`, `FR-002`
+- Dependencies: `1.0`
+- Files:
+  - `src/.../billing-settings`
+- AI Verification: `T-003`
+```
+
+</details>
+
+### 4. Work from `task-prompt.md`
+
+This is the file I would actually keep open while doing the work.
+
+It shows what is already done, what is still open, dependencies and conflicts, and gives me a prompt I can copy straight to the AI.
+
+<details>
+<summary><strong>👉 See a small task-prompt.md example</strong></summary>
+
+````markdown
+# Credit Balance & Auto-Recharge — Task Execution Prompts
+
+## Completed
+
+1.0
+
+## Unfinished
+
+❗2.0, 3.0
+
+## Task 2.0 — Connect automatic recharge to the payment flow
+
+- Dependencies: 1.0
+- Conflicts: 3.0
+
+- Now: The project can store the balance and recharge settings, but it cannot recharge through the real payment flow yet.
+- This task: The AI will connect the recharge service and payment result handling.
+- After: A verified payment can update the user's credit balance through the real integration path.
+
+**Prompt for coding agent**
+
+```text
+Execute Task 2.0 in docs/project/tasks.md. Read the complete parent task and inspect the current implementation first. Implement and verify only that task. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit whose subject starts with 2.0.
+```
+
+## Task 3.0 — Add balance and auto-recharge settings UI
+
+- Dependencies: 1.0
+- Conflicts: 2.0
+
+- Now: Users cannot see their balance or manage auto-recharge from billing settings.
+- This task: The AI will add the balance and auto-recharge UI using the existing Design System rules.
+- After: Users can see their balance and manage auto-recharge without introducing a different billing UI pattern.
+
+**Prompt for coding agent**
+
+```text
+Execute Task 3.0 in docs/project/tasks.md. Read the complete parent task and inspect the current implementation first. Implement and verify only that task. When finished, update docs/project/tasks.md and docs/project/task-prompt.md, then create a commit whose subject starts with 3.0.
+```
+````
+
+</details>
+
+Most of the detail stays in the documents. Day to day, I can just look at `task-prompt.md`, pick the next runnable task, copy the prompt, and continue.
 
 ## What's Inside This Repo
 
