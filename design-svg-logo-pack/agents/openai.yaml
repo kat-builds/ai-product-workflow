@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design SVG Logo Pack"
+  short_description: "Create project-derived logo, icon, and social asset packs"
+  default_prompt: "Use $design-svg-logo-pack to inspect the current project, derive a fitting visual direction, and create or update the complete logo, favicon, app-icon, and social-image asset set without imposing a fixed logo style."
